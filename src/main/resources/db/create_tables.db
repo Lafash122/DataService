@@ -1,0 +1,105 @@
+CREATE TABLE IF NOT EXISTS SETTLEMENTS (
+    id SERIAL PRIMARY PEY,
+    name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS RESOURCES (
+    id SERIAL PRIMARY PEY,
+    name VARCHAR(100) NOT NULL
+);
+
+-- Blueprints
+
+CREATE TABLE IF NOT EXISTS BUILDING_BLUEPRINTS (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    service_life INT NOT NULL,
+    number_of_workdays INT NOT NULL,
+    daily_water_consumption INT NOT NULL,
+    daily_energy_consumption INT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS TRANSPORT_BLUEPRINTS (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    velocity INT NOT NULL CHECK (velocity > 0),
+    number_of_workdays INT NOT NULL CHECK (number_of_workdays > 0),
+    type VARCHAR(100) NOT NULL
+);
+
+-- Subtypes of building blueprints
+
+CREATE TABLE IF NOT EXISTS FACTORY_BLUEPRINTS (
+    id INT PRIMARY KEY REFERENCES BUILDING_BLUEPRINTS(id) ON DELETE CASCADE,
+    number_of_jobs INT NOT NULL CHECK (number_of_jobs >= 0),
+    number_of_jobs_with_higher_education INT NOT NULL CHECK (number_of_jobs_with_higher_education <= number_of_jobs)
+);
+
+CREATE TABLE IF NOT EXISTS PUBLIC_FACILITY_BLUEPRINTS (
+    id INT PRIMARY KEY REFERENCES BUILDING_BLUEPRINTS(id) ON DELETE CASCADE,
+    number_of_visitors INT NOT NULL,
+    number_of_jobs INT NOT NULL CHECK (number_of_jobs > 0),
+    number_of_jobs_with_higher_education INT NOT NULL CHECK (number_of_jobs_with_higher_education <= number_of_jobs)
+);
+
+CREATE TABLE IF NOT EXISTS RESIDENTIAL_BUILDING_BLUEPRINTS (
+    id INT PRIMARY KEY REFERENCES BUILDING_BLUEPRINTS(id) ON DELETE CASCADE,
+    number_of_residents INT NOT NULL CHECK (number_of_residents > 0),
+);
+
+CREATE TABLE IF NOT EXISTS TEMPORARY_RESIDENCE_BUILDING_BLUEPRINTS (
+    id INT PRIMARY KEY REFERENCES BUILDING_BLUEPRINTS(id) ON DELETE CASCADE,
+    number_of_residents INT NOT NULL CHECK (number_of_residents > 0),
+    number_of_jobs INT NOT NULL CHECK (number_of_jobs > 0),
+);
+
+-- Specimens
+
+CREATE TABLE IF NOT EXISTS BUILDINGS (
+    id INT PRIMARY KEY;
+    settlement INT REFERENCES SETTLEMENTS(id),
+    blueprint INT REFERENCES BUILDING_BLUEPRINTS(id)
+);
+
+CREATE TABLE IF NOT EXISTS TRANSPORT (
+    id INT PRIMARY KEY;
+    blueprint INT REFERENCES TRANSPORT_BLUEPRINTS(id)
+);
+
+-- Resources for production acording o
+CREATE TABLE IF NOT EXISTS BUILDING_CONSTRUCTION_RESOURCES (
+    resource_id INT REFERENCES RESOURCES(id) NOT NULL,
+    building_blueprint_id INT REFERENCES BUILDING_BLUEPRINTS(id) NOT NULL,
+    number INT NOT NULL,
+    PRIMARY KEY(resource_id, blueprint_id)
+);
+
+CREATE TABLE IF NOT EXISTS TRANSPORT_CONSTRUCTION_RESOURCES (
+    resource_id INT REFERENCES RESOURCES(id) NOT NULL,
+    transport_blueprint_id INT REFERENCES TRANSPORT_BLUEPRINTS(id) NOT NULL,
+    number INT NOT NULL,
+    PRIMARY KEY(resource_id, blueprint_id)
+);
+
+-- Storage resources in buildings
+CREATE TABLE IF NOT EXISTS RESOURCE_STORAGE_SIZES (
+    resource_id INT REFERENCES RESOURCES(id) NOT NULL,
+    building_blueprint_id INT REFERENCES BUILDING_BLUEPRINTS(id) NOT NULL,
+    number INT NOT NULL,
+    PRIMARY KEY(resource_id, blueprint_id)
+);
+
+-- Resources produced and consumed in factories
+CREATE TABLE IF NOT EXISTS AMOUNT_OF_RESOURCES_CONSUMED (
+    resource_id INT REFERENCES RESOURCES(id) NOT NULL,
+    factory_blueprint_id INT REFERENCES FACTORY_BLUEPRINTS(id) NOT NULL,
+    number INT NOT NULL,
+    PRIMARY KEY(resource_id, blueprint_id)
+);
+
+CREATE TABLE IF NOT EXISTS AMOUNT_OF_RESOURCES_PRODUCES (
+    resource_id INT REFERENCES RESOURCES(id) NOT NULL,
+    factory_blueprint_id INT REFERENCES FACTORY_BLUEPRINTS(id) NOT NULL,
+    number INT NOT NULL,
+    PRIMARY KEY(resource_id, blueprint_id)
+)
