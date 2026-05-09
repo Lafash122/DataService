@@ -7,3 +7,10 @@ log/
 .idea/
 *.iml
 *.iws
+
+.env
+
+src/main/java/com/nsu/planningapp/planningapp/model/entity/RowProcessingStrategy.java
+src/main/java/com/nsu/planningapp/planningapp/model/entity/ImportExecutionContext.java
+src/main/java/com/nsu/planningapp/planningapp/model/entity/FlexibleCsvImporter.java
+src/main/java/com/nsu/planningapp/planningapp/model/entity/CsvDataLoader.java
