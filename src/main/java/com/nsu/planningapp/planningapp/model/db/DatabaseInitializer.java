@@ -26,6 +26,7 @@ public class DatabaseInitializer {
         }
     }
 
+    // Инициализация в 4 этапа по стандарту
     private static void createFromDefaultFiles(Connection conn) throws Exception {
 
     }

@@ -500,11 +500,8 @@ public class CsvImporter {
                     isHeader = false;
                     continue;
                 }
-
                 String[] parts = line.split(delimiter);
-
                 String blueprintName = parts[0];
-
                 int blueprintId;
 
                 ResultSet resultBlueprintSet = findBlueprintStmt.executeQuery();

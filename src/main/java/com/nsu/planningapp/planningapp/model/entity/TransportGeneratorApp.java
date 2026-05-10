@@ -1,0 +1,21 @@
+package com.nsu.planningapp.planningapp.model.entity;
+
+import com.nsu.planningapp.planningapp.model.csv.CsvExporter;
+
+import java.util.List;
+
+public class TransportGeneratorApp {
+    static String outputPath = "src/main/resources/db/csv/transport.csv";
+    public static void generate(List<String> blueprintNames) throws Exception {
+        try {
+            TransportGenerator generator = new TransportGenerator(blueprintNames);
+            List<String> transportList = generator.generateList(42);
+            CsvExporter.exportTransportToCsv(transportList, outputPath, true);
+
+            System.out.println("\nTransport exported to: " + outputPath);
+        } catch (Exception e) {
+            System.err.println("Transport generation error: " + e.getMessage());
+            throw e;
+        }
+    }
+}

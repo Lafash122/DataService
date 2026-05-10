@@ -5,7 +5,7 @@ import com.nsu.planningapp.planningapp.model.csv.CsvExporter;
 import java.util.Set;
 
 public class SettlementNameGeneratorApp {
-    public static void generate(String[] args) throws Exception {
+    public static void generate() throws Exception {
         try {
             SettlementNameGenerator generator = new SettlementNameGenerator(
                     SettlementNameDictionary.getRussianPrefixes(),
@@ -19,11 +19,11 @@ public class SettlementNameGeneratorApp {
             //cityNames.forEach(System.out::println);
 
             String outputPath = "src/main/resources/db/csv/generatedsettlements.csv";
-            CsvExporter.exportToCsv(settlementNames, outputPath, true);
+            CsvExporter.exportSettlementsToCsv(settlementNames, outputPath, true);
 
             System.out.println("\nSettlements exported to: " + outputPath);
         } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
+            System.err.println("Settlement generation error: " + e.getMessage());
             throw e;
         }
     }
