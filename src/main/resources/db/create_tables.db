@@ -1,11 +1,12 @@
 CREATE TABLE IF NOT EXISTS SETTLEMENTS (
-    id SERIAL PRIMARY PEY,
+    id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS RESOURCES (
-    id SERIAL PRIMARY PEY,
-    name VARCHAR(100) NOT NULL
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    unit VARCHAR(100) NOT NULL
 );
 
 -- Blueprints
@@ -16,7 +17,8 @@ CREATE TABLE IF NOT EXISTS BUILDING_BLUEPRINTS (
     service_life INT NOT NULL,
     number_of_workdays INT NOT NULL,
     daily_water_consumption INT NOT NULL,
-    daily_energy_consumption INT NOT NULL
+    daily_energy_consumption INT NOT NULL,
+    blueprint_type VARCHAR(100) NOT NULL,
 );
 
 CREATE TABLE IF NOT EXISTS TRANSPORT_BLUEPRINTS (
@@ -32,25 +34,27 @@ CREATE TABLE IF NOT EXISTS TRANSPORT_BLUEPRINTS (
 CREATE TABLE IF NOT EXISTS FACTORY_BLUEPRINTS (
     id INT PRIMARY KEY REFERENCES BUILDING_BLUEPRINTS(id) ON DELETE CASCADE,
     number_of_jobs INT NOT NULL CHECK (number_of_jobs >= 0),
-    number_of_jobs_with_higher_education INT NOT NULL CHECK (number_of_jobs_with_higher_education <= number_of_jobs)
+    number_of_jobs_with_higher_education INT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS PUBLIC_FACILITY_BLUEPRINTS (
     id INT PRIMARY KEY REFERENCES BUILDING_BLUEPRINTS(id) ON DELETE CASCADE,
-    number_of_visitors INT NOT NULL,
     number_of_jobs INT NOT NULL CHECK (number_of_jobs > 0),
-    number_of_jobs_with_higher_education INT NOT NULL CHECK (number_of_jobs_with_higher_education <= number_of_jobs)
+    number_of_jobs_with_higher_education INT NOT NULL,
+    number_of_visitors INT NOT NULL,
+    number_of_parking_spaces INT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS RESIDENTIAL_BUILDING_BLUEPRINTS (
     id INT PRIMARY KEY REFERENCES BUILDING_BLUEPRINTS(id) ON DELETE CASCADE,
     number_of_residents INT NOT NULL CHECK (number_of_residents > 0),
+    quality_of_housing INT NOT NULL CHECK (quality_of_housing > 0) AND (quality_of_housing <= 100),
 );
 
 CREATE TABLE IF NOT EXISTS TEMPORARY_RESIDENCE_BUILDING_BLUEPRINTS (
     id INT PRIMARY KEY REFERENCES BUILDING_BLUEPRINTS(id) ON DELETE CASCADE,
-    number_of_residents INT NOT NULL CHECK (number_of_residents > 0),
     number_of_jobs INT NOT NULL CHECK (number_of_jobs > 0),
+    number_of_residents INT NOT NULL CHECK (number_of_residents >= 0),
 );
 
 -- Specimens
@@ -66,40 +70,41 @@ CREATE TABLE IF NOT EXISTS TRANSPORT (
     blueprint INT REFERENCES TRANSPORT_BLUEPRINTS(id)
 );
 
--- Resources for production acording o
+-- Resources for construction according to blueprints
+
 CREATE TABLE IF NOT EXISTS BUILDING_CONSTRUCTION_RESOURCES (
-    resource_id INT REFERENCES RESOURCES(id) NOT NULL,
     building_blueprint_id INT REFERENCES BUILDING_BLUEPRINTS(id) NOT NULL,
-    number INT NOT NULL,
+    resource_id INT REFERENCES RESOURCES(id) NOT NULL,
+    quantity INT NOT NULL,
     PRIMARY KEY(resource_id, blueprint_id)
 );
 
 CREATE TABLE IF NOT EXISTS TRANSPORT_CONSTRUCTION_RESOURCES (
-    resource_id INT REFERENCES RESOURCES(id) NOT NULL,
     transport_blueprint_id INT REFERENCES TRANSPORT_BLUEPRINTS(id) NOT NULL,
-    number INT NOT NULL,
+    resource_id INT REFERENCES RESOURCES(id) NOT NULL,
+    quantity INT NOT NULL,
     PRIMARY KEY(resource_id, blueprint_id)
 );
 
 -- Storage resources in buildings
 CREATE TABLE IF NOT EXISTS RESOURCE_STORAGE_SIZES (
-    resource_id INT REFERENCES RESOURCES(id) NOT NULL,
     building_blueprint_id INT REFERENCES BUILDING_BLUEPRINTS(id) NOT NULL,
-    number INT NOT NULL,
+    resource_id INT REFERENCES RESOURCES(id) NOT NULL,
+    quantity INT NOT NULL,
     PRIMARY KEY(resource_id, blueprint_id)
 );
 
 -- Resources produced and consumed in factories
 CREATE TABLE IF NOT EXISTS AMOUNT_OF_RESOURCES_CONSUMED (
-    resource_id INT REFERENCES RESOURCES(id) NOT NULL,
     factory_blueprint_id INT REFERENCES FACTORY_BLUEPRINTS(id) NOT NULL,
-    number INT NOT NULL,
+    resource_id INT REFERENCES RESOURCES(id) NOT NULL,
+    quantity INT NOT NULL,
     PRIMARY KEY(resource_id, blueprint_id)
 );
 
-CREATE TABLE IF NOT EXISTS AMOUNT_OF_RESOURCES_PRODUCES (
-    resource_id INT REFERENCES RESOURCES(id) NOT NULL,
+CREATE TABLE IF NOT EXISTS AMOUNT_OF_RESOURCES_PRODUCED (
     factory_blueprint_id INT REFERENCES FACTORY_BLUEPRINTS(id) NOT NULL,
-    number INT NOT NULL,
+    resource_id INT REFERENCES RESOURCES(id) NOT NULL,
+    quantity INT NOT NULL,
     PRIMARY KEY(resource_id, blueprint_id)
 )

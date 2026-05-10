@@ -1,6 +1,7 @@
 package com.nsu.planningapp.planningapp.model.entity;
 
+@Deprecated
 @FunctionalInterface
-public interface ProcessingStrategy {
-    void process(String[] parts, ImportExecutionContext context) throws Exception;
+public interface RowProcessingStrategy {
+    void processRow(String[] parts, ImportExecutionContext context) throws Exception;
 }
