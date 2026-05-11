@@ -7,11 +7,11 @@ import java.util.Set;
 
 
 public class BuildingGeneratorApp {
-    public static void generate(List<String> settlementsNames, List<String> blueprintsNames) throws Exception {
+    public static void generate(List<String> settlementsNames, List<String> blueprintsNames, String outputPath)
+            throws Exception {
         try {
             BuildingGenerator generator = new BuildingGenerator(settlementsNames, blueprintsNames);
             Set<BuildingPair> buildingsSet = generator.generateUniqueSet(40);
-            String outputPath = "src/main/resources/db/csv/buildings.csv";
             CsvExporter.exportBuildingsToCsv(buildingsSet, outputPath, true);
 
             System.out.println("\nBuildings exported to: " + outputPath);

@@ -8,8 +8,8 @@ import java.sql.SQLException;
 public class DatabaseConnection {
     static String JDBC_URL = "jdbc:postgresql://localhost:5432/socialist_country" +
             "?currentSchema=public" +
-            "&user" +
-            "&password";
+            "&user=postgres" +
+            "&password=admin4238";
 
     public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(JDBC_URL);

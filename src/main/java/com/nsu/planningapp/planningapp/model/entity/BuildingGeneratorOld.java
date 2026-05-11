@@ -19,10 +19,10 @@ public class BuildingGeneratorOld {
     }
 
     public BuildingPair generateOneBuilding() throws Exception {
-        Long settlementId = getRandomElement(settlementsIds);
-        Long buildingId = getRandomElement(buildingsIds);
+        //Long settlementId = getRandomElement(settlementsIds);
+        //Long buildingId = getRandomElement(buildingsIds);
 
-        return new BuildingPair(settlementId, buildingId);
+        return new BuildingPair("settlementId", "buildingId");
     }
 
     public Set<BuildingPair> generateUniqueSet(int count) throws Exception {

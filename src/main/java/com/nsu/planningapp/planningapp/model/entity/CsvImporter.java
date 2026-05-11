@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.io.IOException;
 
 import java.sql.*;
+import java.util.Arrays;
 
 public class CsvImporter {
     static String delimiter = ";";
@@ -12,29 +13,33 @@ public class CsvImporter {
     // Resources and settlements (cities, towns, etc.)
 
     public void importResources(Connection conn, String filePath) throws IOException, SQLException {
-        String sql = "INSERT INTO RESOURCES (name) VALUES (?)";
+        String sql = "INSERT INTO RESOURCES (name, unit) VALUES (?, ?)";
         importResourcesTable(conn, filePath, sql);
+        System.out.println("importResources done\n");
     }
 
     public void importSettlements(Connection conn, String filePath) throws IOException, SQLException {
         String sql = "INSERT INTO SETTLEMENTS (name) VALUES (?)";
         importSettlementsTable(conn, filePath, sql);
+        System.out.println("importSettlements done\n");
     }
 
     // Blueprints
 
     public void importBuildingBlueprints(Connection conn, String filePath) throws IOException, SQLException {
-        String sqlQuery = "INSERT INTO BUILDING_BLUEPRINTS (id, name, blueprint_type, service_life, " +
-                "number_of_workdays, daily_water_consumption, daily_energy_consumption) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sqlQuery = "INSERT INTO BUILDING_BLUEPRINTS (name, service_life, " +
+                "number_of_workdays, daily_water_consumption, daily_energy_consumption, blueprint_type) " +
+                "VALUES (?, ?, ?, ?, ?, ?)";
         importBuildingBlueprints(conn, filePath, sqlQuery);
+        System.out.println("importBuildingBlueprints done\n");
     }
 
     public void importTransportBlueprints(Connection conn, String filePath) throws IOException, SQLException {
-        String sqlQuery = "INSERT INTO TRANSPORT_BLUEPRINTS (id, name, velocity, " +
+        String sqlQuery = "INSERT INTO TRANSPORT_BLUEPRINTS (name, velocity, " +
                 "number_of_workdays, type) " +
-                "VALUES (?, ?, ?, ?, ?)";
+                "VALUES (?, ?, ?, ?)";
         importTransportBlueprints(conn, filePath, sqlQuery);
+        System.out.println("importTransportBlueprints done\n");
     }
 
     // Subtypes of building blueprints
@@ -45,6 +50,7 @@ public class CsvImporter {
                 "VALUES (?, ?, ?)";
         String findBlueprintId = "SELECT id FROM BUILDING_BLUEPRINTS WHERE name = ?";
         importFactoryBlueprints(conn, filePath, sqlQuery, findBlueprintId);
+        System.out.println("importFactoryBlueprints done\n");
     }
 
     public void importPublicBlueprints(Connection conn, String filePath) throws IOException, SQLException {
@@ -53,6 +59,7 @@ public class CsvImporter {
                 "VALUES (?, ?, ?, ?, ?)";
         String findBlueprintId = "SELECT id FROM BUILDING_BLUEPRINTS WHERE name = ?";
         importPublicBlueprints(conn, filePath, sqlQuery, findBlueprintId);
+        System.out.println("importPublicBlueprints done\n");
     }
 
     public void importResidentialBlueprints(Connection conn, String filePath) throws IOException, SQLException {
@@ -61,6 +68,7 @@ public class CsvImporter {
                 "VALUES (?, ?, ?)";
         String findBlueprintId = "SELECT id FROM BUILDING_BLUEPRINTS WHERE name = ?";
         importResidentialBlueprints(conn, filePath, sqlQuery, findBlueprintId);
+        System.out.println("importResidentialBlueprints done\n");
     }
 
     public void importTemporaryBlueprints(Connection conn, String filePath) throws IOException, SQLException {
@@ -69,21 +77,24 @@ public class CsvImporter {
                 "VALUES (?, ?, ?)";
         String findBlueprintId = "SELECT id FROM BUILDING_BLUEPRINTS WHERE name = ?";
         importTemporaryBlueprints(conn, filePath, sqlQuery, findBlueprintId);
+        System.out.println("importTemporaryBlueprints done\n");
     }
 
     // Specimens
 
     public void importBuildings(Connection conn, String filePath) throws IOException, SQLException {
-        String insertSql = "INSERT INTO BUILDINGS VALUES (?, ?)";
+        String insertSql = "INSERT INTO BUILDINGS (settlement, blueprint) VALUES (?, ?)";
         String findBlueprintId = "SELECT id FROM BUILDING_BLUEPRINTS WHERE name = ?";
         String findSettlementId = "SELECT id FROM SETTLEMENTS WHERE name = ?";
         importBuildings(conn, filePath, insertSql, findBlueprintId, findSettlementId);
+        System.out.println("importBuildings done\n");
     }
 
     public void importTransport(Connection conn, String filePath) throws IOException, SQLException  {
-        String insertSql = "INSERT INTO TRANSPORT VALUES ?";
+        String insertSql = "INSERT INTO TRANSPORT (blueprint) VALUES (?)";
         String findBlueprintId = "SELECT id FROM TRANSPORT_BLUEPRINTS WHERE name = ?";
         importTransport(conn, filePath, insertSql, findBlueprintId);
+        System.out.println("importTransport done\n");
     }
 
     // Resources for construction / production according to blueprints
@@ -94,42 +105,47 @@ public class CsvImporter {
                 "(building_blueprint_id, resource_id, quantity) VALUES (?, ?, ?)";
 
         importBlueprintResources(conn, filePath, findBlueprintId, insertSql);
+        System.out.println("importBuildingBlueprintResources done\n");
     }
 
     public void importTransportBlueprintResources(Connection conn, String filePath) throws SQLException, IOException {
         String findBlueprintId = "SELECT id FROM TRANSPORT_BLUEPRINTS WHERE name = ?";
-        String insertSql = "INSERT INTO BUILDING_CONSTRUCTION_RESOURCES " +
+        String insertSql = "INSERT INTO TRANSPORT_CONSTRUCTION_RESOURCES " +
                 "(transport_blueprint_id, resource_id, quantity) VALUES (?, ?, ?)";
 
         importBlueprintResources(conn, filePath, findBlueprintId, insertSql);
+        System.out.println("importTransportBlueprintResources done\n");
     }
 
     // Resources produced and consumed in factories
 
     public void importConsumedResources(Connection conn, String filePath) throws SQLException, IOException {
-        String findBlueprintId = "SELECT id FROM FACTORY_BLUEPRINTS WHERE name = ?";
-        String insertSql = "INSERT INTO BUILDING_CONSTRUCTION_RESOURCES " +
+        String findBlueprintId = "SELECT id FROM BUILDING_BLUEPRINTS WHERE name = ?";
+        String insertSql = "INSERT INTO AMOUNT_OF_RESOURCES_CONSUMED " +
                 "(factory_blueprint_id, resource_id, quantity) VALUES (?, ?, ?)";
 
         importBlueprintResources(conn, filePath, findBlueprintId, insertSql);
+        System.out.println("importConsumedBlueprint done\n");
     }
 
     public void importProducesBlueprint(Connection conn, String filePath) throws SQLException, IOException {
-        String findBlueprintId = "SELECT id FROM FACTORY_BLUEPRINTS WHERE name = ?";
-        String insertSql = "INSERT INTO BUILDING_CONSTRUCTION_RESOURCES " +
+        String findBlueprintId = "SELECT id FROM BUILDING_BLUEPRINTS WHERE name = ?";
+        String insertSql = "INSERT INTO AMOUNT_OF_RESOURCES_PRODUCED " +
                 "(factory_blueprint_id, resource_id, quantity) VALUES (?, ?, ?)";
 
         importBlueprintResources(conn, filePath, findBlueprintId, insertSql);
+        System.out.println("importProducesBlueprint done\n");
     }
 
     // Storage resources in buildings
 
     public void importResourcesStorage(Connection conn, String filePath) throws SQLException, IOException {
         String findBlueprintId = "SELECT id FROM BUILDING_BLUEPRINTS WHERE name = ?";
-        String insertSql = "INSERT INTO BUILDING_CONSTRUCTION_RESOURCES " +
+        String insertSql = "INSERT INTO RESOURCE_STORAGE_SIZES " +
                 "(building_blueprint_id, resource_id, quantity) VALUES (?, ?, ?)";
 
         importBlueprintResources(conn, filePath, findBlueprintId, insertSql);
+        System.out.println("importResourcesStorage done\n");
     }
 
 
@@ -187,7 +203,8 @@ public class CsvImporter {
         }
     }
 
-    private static void importBuildingBlueprints(Connection conn, String filePath, String sqlQuery) throws IOException, SQLException {
+    private static void importBuildingBlueprints(Connection conn, String filePath, String sqlQuery)
+            throws IOException, SQLException {
         try (BufferedReader br = new BufferedReader(new FileReader(filePath));
              PreparedStatement pstmt = conn.prepareStatement(sqlQuery, Statement.RETURN_GENERATED_KEYS))
         {
@@ -202,20 +219,18 @@ public class CsvImporter {
                 String[] parts = line.split(delimiter);
 
                 String name = parts[0];
-                int id = Integer.parseInt(parts[1]);
-                String blueprint_type = parts[2];
-                int service_life = Integer.parseInt(parts[3]);
-                int number_of_workdays = Integer.parseInt(parts[4]);
-                float daily_water_consumption = Float.parseFloat(parts[5]);
-                float daily_energy_consumption = Float.parseFloat(parts[6]);
+                int service_life = Integer.parseInt(parts[1]);
+                int number_of_workdays = Integer.parseInt(parts[2]);
+                float daily_water_consumption = Float.parseFloat(parts[3].replace(',', '.'));
+                float daily_energy_consumption = Float.parseFloat(parts[4].replace(',', '.'));
+                String blueprint_type = parts[5];
 
                 pstmt.setString(1, name);
-                pstmt.setInt(2, id);
-                pstmt.setString(3, blueprint_type);
-                pstmt.setInt(4, service_life);
-                pstmt.setInt(5, number_of_workdays);
-                pstmt.setFloat(6, daily_water_consumption);
-                pstmt.setFloat(7, daily_energy_consumption);
+                pstmt.setInt(2, service_life);
+                pstmt.setInt(3, number_of_workdays);
+                pstmt.setFloat(4, daily_water_consumption);
+                pstmt.setFloat(5, daily_energy_consumption);
+                pstmt.setString(6, blueprint_type);
 
                 pstmt.executeUpdate();
             }
@@ -237,16 +252,14 @@ public class CsvImporter {
                 String[] parts = line.split(delimiter);
 
                 String name = parts[0];
-                String id = parts[1];
-                float velocity = Float.parseFloat(parts[2]);
-                int number_of_workdays = Integer.parseInt(parts[3]);
-                String type = parts[4];
+                float velocity = Float.parseFloat(parts[1].replace(',', '.'));
+                int number_of_workdays = Integer.parseInt(parts[2]);
+                String type = parts[3];
 
                 pstmt.setString(1, name);
-                pstmt.setString(2, id);
-                pstmt.setFloat(3, velocity);
-                pstmt.setInt(4, number_of_workdays);
-                pstmt.setString(5, type);
+                pstmt.setFloat(2, velocity);
+                pstmt.setInt(3, number_of_workdays);
+                pstmt.setString(4, type);
 
                 pstmt.executeUpdate();
             }
@@ -312,6 +325,8 @@ public class CsvImporter {
                     continue;
                 }
 
+                //System.out.println(line);
+
                 String[] parts = line.split(delimiter);
 
                 String name = parts[0];
@@ -319,6 +334,8 @@ public class CsvImporter {
                 int number_of_jobs_with_higher_education = Integer.parseInt(parts[2]);
                 int number_of_visitors = Integer.parseInt(parts[3]);
                 int number_of_parking_spaces = Integer.parseInt(parts[4]);
+
+                //System.out.println(name);
 
                 findBlueprintStmt.setString(1, name);
                 ResultSet resultBlueprintSet = findBlueprintStmt.executeQuery();
@@ -332,6 +349,8 @@ public class CsvImporter {
                     resultBlueprintSet.close();
                     continue;
                 }
+
+                //System.out.println(name + "; " + id);
 
                 pstmt.setInt(1, id);
                 pstmt.setInt(2, number_of_jobs);
@@ -454,7 +473,10 @@ public class CsvImporter {
                 int settlementId;
                 int blueprintId;
 
+                findSettlementStmt.setString(1, settlementName);
                 ResultSet resultSettlementSet = findSettlementStmt.executeQuery();
+
+                findBlueprintStmt.setString(1, blueprintName);
                 ResultSet resultBlueprintSet = findBlueprintStmt.executeQuery();
 
                 if (resultBlueprintSet.next()) {
@@ -477,8 +499,8 @@ public class CsvImporter {
                     continue;
                 }
 
-                insertStmt.setInt(1, blueprintId);
-                insertStmt.setInt(2, settlementId);
+                insertStmt.setInt(1, settlementId);
+                insertStmt.setInt(2, blueprintId);
                 insertStmt.executeUpdate();
 
                 resultBlueprintSet.close();
@@ -504,6 +526,7 @@ public class CsvImporter {
                 String blueprintName = parts[0];
                 int blueprintId;
 
+                findBlueprintStmt.setString(1, blueprintName);
                 ResultSet resultBlueprintSet = findBlueprintStmt.executeQuery();
 
                 if (resultBlueprintSet.next()) {
@@ -545,7 +568,7 @@ public class CsvImporter {
                 String[] parts = line.split(delimiter);
                 String blueprintName = parts[0];
                 String resourceName = parts[1];
-                int quantity = Integer.parseInt(parts[2]);
+                float quantity = Float.parseFloat(parts[2].replace(',', '.'));
 
                 // Requesting a resource ID from the database
                 findBlueprintStmt.setString(1, blueprintName);
@@ -579,7 +602,7 @@ public class CsvImporter {
 
                 insertStmt.setInt(1, blueprintId);
                 insertStmt.setInt(2,resourceId);
-                insertStmt.setInt(3, quantity);
+                insertStmt.setFloat(3, quantity);
                 insertStmt.executeUpdate();
 
                 resultBlueprintSet.close();
