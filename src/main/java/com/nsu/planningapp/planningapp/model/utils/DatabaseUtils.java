@@ -1,6 +1,6 @@
 package com.nsu.planningapp.planningapp.model.utils;
 
-import java.io.IOException;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 public class DatabaseUtils {
     public static List<Long> fetchIds(Connection conn, String tableName, String columnName)
-        throws SQLException, IOException {
+        throws SQLException {
         List<Long> ids = new ArrayList<>();
         String sql = "SELECT " + columnName + " FROM " + tableName;
 
@@ -37,6 +37,7 @@ public class DatabaseUtils {
 
         try (Statement stmt = conn.createStatement()) {
             for (String sql : statements) {
+                //System.out.println(sql); -- debug
                 try {
                     stmt.execute(sql);
                 } catch (SQLException e) {
@@ -46,7 +47,7 @@ public class DatabaseUtils {
         }
     }
 
-    private static List<String> splitSqlStatements(String content) {
+    public static List<String> splitSqlStatements(String content) {
         return Arrays.stream(content.split(";"))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())

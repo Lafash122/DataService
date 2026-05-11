@@ -17,6 +17,7 @@ import com.nsu.planningapp.planningapp.model.entity.BuildingGeneratorApp;
 import com.nsu.planningapp.planningapp.model.entity.CsvImporter;
 import com.nsu.planningapp.planningapp.model.entity.SettlementNameGeneratorApp;
 import com.nsu.planningapp.planningapp.model.entity.TransportGeneratorApp;
+import com.nsu.planningapp.planningapp.model.utils.DatabaseUtils;
 
 //
 public class DatabaseInitializer {
@@ -63,7 +64,7 @@ public class DatabaseInitializer {
     // Инициализация в 4 этапа по стандарту
     public static void createFromDefaultFiles(Connection conn) throws Exception {
         try {
-            //dataGeneration();
+            dataGeneration();
             fillTables(conn);
         } catch (Exception e) {
             throw new Exception("Filling in database exception: " + e.getMessage());
@@ -116,7 +117,7 @@ public class DatabaseInitializer {
     }
 
     private static void createIfNotExistTables(Connection conn) throws Exception {
-        executeSqlScript(conn, DB_TABLES);
+        DatabaseUtils.executeSqlScript(conn, DB_TABLES);
     }
 
     private static void executeSqlScript(Connection conn, String filePath) throws Exception {

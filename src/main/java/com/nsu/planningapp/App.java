@@ -7,20 +7,17 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-/**
- * Hello world!
- */
+
 public class App {
     // Test: 1) Connection + 2) Filling in tables
     public static void main(String[] args) {
-        try {
+        try (Connection connection = DatabaseConnection.getConnection()) {
             // 0. Установка соединения
-            Connection connection = DatabaseConnection.getConnection();
             // 1. Создание таблиц
-            DatabaseInitializer.createTables();
             // 2. Заполнение таблиц данными
-            DatabaseInitializer.createFromDefaultFiles(connection);
-            System.out.println("Успешно завершено!");
+            createAndFillDatabase(connection);
+
+            // 3. Запросы.
         } catch (SQLException e) {
             System.err.println("SQLException caught: " + e.getMessage());
         } catch (IOException e) {
@@ -28,5 +25,11 @@ public class App {
         } catch (Exception e) {
             System.err.println("Exception caught: " + e.getMessage());
         }
+    }
+
+    public static void createAndFillDatabase(Connection conn) throws Exception {
+        DatabaseInitializer.createTables();
+        DatabaseInitializer.createFromDefaultFiles(conn);
+        System.out.println("Соединение установлено, данные добавлены в БД.");
     }
 }
