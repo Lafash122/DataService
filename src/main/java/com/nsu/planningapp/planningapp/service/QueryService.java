@@ -1,13 +1,14 @@
-package com.nsu.planningapp.planningapp.model.db;
+package com.nsu.planningapp.planningapp.service;
 
 import com.nsu.planningapp.planningapp.dto.*;
+import com.nsu.planningapp.planningapp.infrastructure.db.DatabaseConnection;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class DatabaseQueries {
+public class QueryService {
     //TODO: возможно, получить сет типов зданий, которые есть в БД (bblueprint)
 
     // 1

@@ -1,4 +1,4 @@
-package com.nsu.planningapp.planningapp.model.entity;
+package com.nsu.planningapp.planningapp.dto;
 
 public record BuildingPair(String settlementName, String blueprintName) {
     @Override

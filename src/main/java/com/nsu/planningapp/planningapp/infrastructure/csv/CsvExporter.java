@@ -1,6 +1,6 @@
-package com.nsu.planningapp.planningapp.model.csv;
+package com.nsu.planningapp.planningapp.infrastructure.csv;
 
-import com.nsu.planningapp.planningapp.model.entity.BuildingPair;
+import com.nsu.planningapp.planningapp.dto.BuildingPair;
 
 import java.io.BufferedWriter;
 import java.io.IOException;

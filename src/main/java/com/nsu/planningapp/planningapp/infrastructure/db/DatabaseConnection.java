@@ -1,4 +1,4 @@
-package com.nsu.planningapp.planningapp.model.db;
+package com.nsu.planningapp.planningapp.infrastructure.db;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

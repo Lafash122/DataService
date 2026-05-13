@@ -1,4 +1,6 @@
-package com.nsu.planningapp.planningapp.model.db;
+package com.nsu.planningapp.planningapp.service;
+
+import com.nsu.planningapp.planningapp.infrastructure.db.DatabaseConnection;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -7,7 +9,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ReferenceDataService {
+public class PreliminaryQueryService {
     // Settlements
     public static List<String> getAllSettlements() throws SQLException {
         String sql = "SELECT name FROM SETTMELENTS ORDER BY name";

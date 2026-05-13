@@ -1,6 +1,7 @@
-package com.nsu.planningapp.planningapp.model.entity;
+package com.nsu.planningapp.planningapp.infrastructure.generation;
 
-import com.nsu.planningapp.planningapp.model.csv.CsvExporter;
+import com.nsu.planningapp.planningapp.infrastructure.csv.CsvExporter;
+import com.nsu.planningapp.planningapp.dto.BuildingPair;
 
 import java.util.List;
 import java.util.Set;

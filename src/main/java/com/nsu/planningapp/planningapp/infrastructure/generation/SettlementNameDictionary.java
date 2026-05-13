@@ -1,4 +1,4 @@
-package com.nsu.planningapp.planningapp.model.entity;
+package com.nsu.planningapp.planningapp.infrastructure.generation;
 
 import java.util.Arrays;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.nsu.planningapp.planningapp.model.csv;
+package com.nsu.planningapp.planningapp.infrastructure.csv;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

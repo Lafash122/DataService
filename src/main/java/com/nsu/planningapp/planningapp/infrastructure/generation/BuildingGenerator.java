@@ -1,4 +1,6 @@
-package com.nsu.planningapp.planningapp.model.entity;
+package com.nsu.planningapp.planningapp.infrastructure.generation;
+
+import com.nsu.planningapp.planningapp.dto.BuildingPair;
 
 import java.util.*;
 

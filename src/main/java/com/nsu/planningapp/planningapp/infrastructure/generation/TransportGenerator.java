@@ -1,7 +1,5 @@
-package com.nsu.planningapp.planningapp.model.entity;
+package com.nsu.planningapp.planningapp.infrastructure.generation;
 
-import java.io.IOException;
-import java.sql.SQLException;
 import java.util.*;
 
 public class TransportGenerator {

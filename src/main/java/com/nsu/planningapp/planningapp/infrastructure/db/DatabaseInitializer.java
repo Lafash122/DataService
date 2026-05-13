@@ -1,4 +1,4 @@
-package com.nsu.planningapp.planningapp.model.db;
+package com.nsu.planningapp.planningapp.infrastructure.db;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -6,18 +6,15 @@ import java.nio.file.Paths;
 import java.sql.Statement;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.nsu.planningapp.planningapp.model.csv.CsvReader;
-import com.nsu.planningapp.planningapp.model.db.DatabaseConnection;
-import com.nsu.planningapp.planningapp.model.entity.BuildingGeneratorApp;
-import com.nsu.planningapp.planningapp.model.entity.CsvImporter;
-import com.nsu.planningapp.planningapp.model.entity.SettlementNameGeneratorApp;
-import com.nsu.planningapp.planningapp.model.entity.TransportGeneratorApp;
-import com.nsu.planningapp.planningapp.model.utils.DatabaseUtils;
+import com.nsu.planningapp.planningapp.infrastructure.csv.CsvReader;
+import com.nsu.planningapp.planningapp.infrastructure.generation.BuildingGeneratorApp;
+import com.nsu.planningapp.planningapp.infrastructure.csv.CsvImporter;
+import com.nsu.planningapp.planningapp.infrastructure.generation.SettlementNameGeneratorApp;
+import com.nsu.planningapp.planningapp.infrastructure.generation.TransportGeneratorApp;
 
 //
 public class DatabaseInitializer {

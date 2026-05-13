@@ -1,11 +1,10 @@
-package com.nsu.planningapp.planningapp.model.entity;
+package com.nsu.planningapp.planningapp.infrastructure.csv;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
 import java.sql.*;
-import java.util.Arrays;
 
 public class CsvImporter {
     static String delimiter = ";";

@@ -1,4 +1,4 @@
-package com.nsu.planningapp.planningapp.model.utils;
+package com.nsu.planningapp.planningapp.infrastructure.db;
 
 
 import java.nio.file.Files;
