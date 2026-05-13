@@ -1,16 +1,9 @@
 package com.nsu.planningapp.planningapp.dto;
 
-public class ResourceDto{
-    private final int id;
-    private final String name;
-    //private id unit;
+//  NOT USED
 
-    ResourceDto(int id, String name) {
-        this.id = id;
-        this.name = name;
-    }
-
+public record ResourceDto(int id, String name, String unit){
     public int getId(){ return id; }
     public String getName(){ return name; }
-    //public id getUnit(){ return unit; }
+    public String getUnit(){ return unit; }
 }

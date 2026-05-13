@@ -6,10 +6,11 @@ import java.sql.SQLException;
 
 
 public class DatabaseConnection {
-    static String JDBC_URL = "jdbc:postgresql://localhost:5432/socialist_country" +
-            "?currentSchema=public" +
-            "&user=postgres" +
-            "&password=admin4238";
+    static String JDBC_URL = String.format(
+            "jdbc:postgresql://localhost:5432/socialist_country?currentSchema=public&user=%s&password=%s",
+            System.getenv("DB_USER"),
+            System.getenv("DB_PASSWORD")
+    );
 
     public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(JDBC_URL);
