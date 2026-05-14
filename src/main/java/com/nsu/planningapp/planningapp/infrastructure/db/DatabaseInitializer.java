@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Statement;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
@@ -16,7 +17,6 @@ import com.nsu.planningapp.planningapp.infrastructure.csv.CsvImporter;
 import com.nsu.planningapp.planningapp.infrastructure.generation.SettlementNameGeneratorApp;
 import com.nsu.planningapp.planningapp.infrastructure.generation.TransportGeneratorApp;
 
-//
 public class DatabaseInitializer {
     // Files with data
     static String DB_TABLES = "src/main/resources/db/create_tables.db";
@@ -51,11 +51,15 @@ public class DatabaseInitializer {
 
     public static void createTables() throws Exception {
         try (Connection connection = DatabaseConnection.getConnection()) {
-            createIfNotExistTables(connection);
+            createTables(connection);
 
         } catch (SQLException e) {
             System.err.println("Initialization error: " + e.getMessage());
         }
+    }
+
+    public static void createTables(Connection conn) throws Exception {
+        DatabaseUtils.executeSqlScript(conn, DB_TABLES);
     }
 
     // Инициализация в 4 этапа по стандарту
@@ -113,10 +117,6 @@ public class DatabaseInitializer {
         importer.importResourcesStorage(conn, RESOURCESKEEP);
     }
 
-    private static void createIfNotExistTables(Connection conn) throws Exception {
-        DatabaseUtils.executeSqlScript(conn, DB_TABLES);
-    }
-
     private static void executeSqlScript(Connection conn, String filePath) throws Exception {
         Path path = Paths.get(filePath);
         String content = Files.readString(path);
@@ -134,6 +134,28 @@ public class DatabaseInitializer {
             }
         }
     }
+
+    public static boolean areTablesPresent(Connection conn) throws SQLException {
+        String sql = "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'resources')";
+        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            return rs.next() && rs.getBoolean(1);
+        }
+    }
+
+    public static void dropTables(Connection conn) throws SQLException {
+        String sql = """
+            DO $$ DECLARE
+                r RECORD;
+            BEGIN
+                FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+                    EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+                END LOOP;
+            END $$;
+            """;
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+        }
+}
 
     private static List<String> splitSqlStatements(String content) {
         return Arrays.stream(content.split(";"))

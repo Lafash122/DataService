@@ -15,9 +15,10 @@ public class QueryService {
     public int getTotalResidentCapacity(Integer settlementId) throws SQLException {
         String sql;
         if (settlementId == null) {
-            sql = "SELECT COALESCE(SUM(number_of_residents), 0) FROM RESIDENTIAL_BUILDING_BLUEPRINT";
+            sql = "SELECT COALESCE(SUM(rb.number_of_residents), 0) FROM RESIDENTIAL_BUILDING_BLUEPRINTS rb";
         } else {
-            sql = "SELECT COALESCE(SUM(number_of_residents), 0) FROM RESIDENTIAL_BUILDING_BLUEPRINT WHERE id = ?";
+            sql = "SELECT COALESCE(SUM(rb.number_of_residents), 0) FROM RESIDENTIAL_BUILDING_BLUEPRINTS rb " +
+                  "JOIN BUILDINGS b ON b.blueprint = rb.id WHERE b.settlement = ?";
         }
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -102,11 +103,11 @@ public class QueryService {
     public int getMaxResourceConsumption(String resourceName, Integer settlementId) throws SQLException {
         String sql;
         if (settlementId == null) {
-            sql = "SELECT COALESCE(SUM(rp.quantity), 0) FROM AMOUNT_OF_RESOURCES_CONSUMED rc " +
-                    "JOIN RESOURCES r ON rp.resource_id = r.id " +
+            sql = "SELECT COALESCE(SUM(rc.quantity), 0) FROM AMOUNT_OF_RESOURCES_CONSUMED rc " +
+                    "JOIN RESOURCES r ON rc.resource_id = r.id " +
                     "WHERE r.name = ?";
         } else {
-            sql = "SELECT COALESCE(SUM(rp.quantity), 0) FROM AMOUNT_OF_RESOURCES_CONSUMED rc " +
+            sql = "SELECT COALESCE(SUM(rc.quantity), 0) FROM AMOUNT_OF_RESOURCES_CONSUMED rc " +
                     "JOIN BUILDINGS b ON b.blueprint = rc.factory_blueprint_id " +
                     "JOIN RESOURCES r ON rc.resource_id = r.id " +
                     "WHERE r.name = ? AND b.settlement = ?";
@@ -331,8 +332,17 @@ public class QueryService {
                 stmt.setString(3, resourceName);
                 stmt.setInt(4, settlementId);
             }
+
             ResultSet rs = stmt.executeQuery();
-            return rs.next() ? rs.getDouble("days_to_fill") : Double.POSITIVE_INFINITY;
+            if (rs.next()) {
+                double days = rs.getDouble("days_to_fill");
+            // Если в БД значение NULL (производство = 0), возвращаем бесконечность
+                if (rs.wasNull()) {
+                    return Double.POSITIVE_INFINITY;
+                }
+                return days;
+            }
+            return Double.POSITIVE_INFINITY;
         }
     }
 

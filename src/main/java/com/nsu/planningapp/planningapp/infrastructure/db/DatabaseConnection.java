@@ -7,7 +7,7 @@ import java.sql.SQLException;
 
 public class DatabaseConnection {
     static String JDBC_URL = String.format(
-            "jdbc:postgresql://localhost:5432/socialist_country?currentSchema=public&user=%s&password=%s",
+            "jdbc:postgresql://localhost:5432/socialist_country_example?currentSchema=public&user=%s&password=%s",
             System.getenv("DB_USER"),
             System.getenv("DB_PASSWORD")
     );

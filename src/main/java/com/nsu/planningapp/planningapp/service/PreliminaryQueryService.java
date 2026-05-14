@@ -12,7 +12,7 @@ import java.util.List;
 public class PreliminaryQueryService {
     // Settlements
     public static List<String> getAllSettlements() throws SQLException {
-        String sql = "SELECT name FROM SETTMELENTS ORDER BY name";
+        String sql = "SELECT name FROM SETTLEMENTS ORDER BY name";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -63,7 +63,7 @@ public class PreliminaryQueryService {
     // Resources
 
     public static List<String> getAllResourcesNames() throws SQLException {
-        String sql = "SELECT name FROM RESOURCRES ORDER BY name";
+        String sql = "SELECT name FROM RESOURCES ORDER BY name";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -104,7 +104,8 @@ public class PreliminaryQueryService {
 
     // Constructed buildings
     public List<String> getAllBuildings() throws SQLException {
-        String sql = "SELECT id, name FROM BUILDINGS ORDER BY name";
+        String sql = "SELECT DISTINCT bb.name FROM BUILDINGS b " +
+                     "JOIN BUILDING_BLUEPRINTS bb ON b.blueprint = bb.id ORDER BY bb.name";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -119,9 +120,10 @@ public class PreliminaryQueryService {
     }
 
     public List<String> getBuildingsBySettlement(String settlementName) throws SQLException {
-        String sql = "SELECT b.name FROM BUILDINGS b " +
-                "JOIN SETTLEMENTS s ON b.settlement = s.id " +
-                "WHERE s.name = ? ORDER BY b.name";
+        String sql = "SELECT bb.name FROM BUILDINGS b " +
+                     "JOIN SETTLEMENTS s ON b.settlement = s.id " +
+                     "JOIN BUILDING_BLUEPRINTS bb ON b.blueprint = bb.id " +
+                     "WHERE s.name = ? ORDER BY bb.name";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -138,7 +140,8 @@ public class PreliminaryQueryService {
     }
 
     public Integer getBuildingId(String buildingName) throws SQLException {
-        String sql = "SELECT id FROM BUILDINGS WHERE name = ?";
+        String sql = "SELECT b.id FROM BUILDINGS b " +
+                     "JOIN BUILDING_BLUEPRINTS bb ON b.blueprint = bb.id WHERE bb.name = ? LIMIT 1";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
