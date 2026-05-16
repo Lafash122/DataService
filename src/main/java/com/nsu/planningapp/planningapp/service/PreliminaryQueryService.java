@@ -151,4 +151,25 @@ public class PreliminaryQueryService {
             return rs.next() ? rs.getInt("id") : null;
         }
     }
+
+    // Constructed vehicles
+    public Integer getTransportId(String transportName) throws SQLException {
+        String sql = "SELECT id FROM TRANSPORT WHERE blueprint = (SELECT id FROM TRANSPORT_BLUEPRINTS WHERE name = ?) LIMIT 1";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, transportName);
+            ResultSet rs = stmt.executeQuery();
+            return rs.next() ? rs.getInt("id") : null;
+        }
+    }
+
+    public List<Integer> getTransportIdsByName(List<String> transportNames) throws SQLException {
+        List<Integer> ids = new ArrayList<>();
+        for (String name : transportNames) {
+            Integer id = getTransportId(name);
+            if (id != null) ids.add(id);
+        }
+        return ids;
+    }
 }

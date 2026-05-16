@@ -127,139 +127,201 @@ public class QueryService {
     }
 
     // 5
-    public JobsReportDto getJobsCount(Integer settlementId, Integer buildingId)
-            throws SQLException {
-
-        String sql =
-                "SELECT " +
-                        "   COALESCE(SUM(fb.number_of_jobs), 0) + " +
-                        "   COALESCE(SUM(pf.number_of_jobs), 0) + " +
-                        "   COALESCE(SUM(tr.number_of_jobs), 0) AS total_jobs, " +
-                        "   COALESCE(SUM(fb.number_of_jobs_with_higher_education), 0) + " +
-                        "   COALESCE(SUM(pf.number_of_jobs_with_higher_education), 0) + " +
-                        "   COALESCE(SUM(tr.number_of_jobs_with_higher_education), 0) AS total_higher_edu_jobs " +
-                        "FROM BUILDINGS b " +
-                        "LEFT JOIN FACTORY_BLUEPRINTS fb ON b.blueprint = fb.id " +
-                        "LEFT JOIN PUBLIC_FACILITY_BLUEPRINTS pf ON b.blueprint = pf.id " +
-                        "LEFT JOIN TEMPORARY_RESIDENCE_BUILDING_BLUEPRINTS tr ON b.blueprint = tr.id " +
-                        "WHERE (? IS NULL OR b.settlement = ?) " +    // фильтр по городу
-                        "  AND (? IS NULL OR b.id = ?)";              // фильтр по зданию
+    public JobsReportDto getJobsCount(Integer settlementId, Integer buildingId) throws SQLException {
+        String sql;
+    
+        if (buildingId != null) {
+            sql = """
+                SELECT 
+                    COALESCE(SUM(fb.number_of_jobs), 0) + 
+                    COALESCE(SUM(pf.number_of_jobs), 0) + 
+                    COALESCE(SUM(tr.number_of_jobs), 0) AS total_jobs,
+                    COALESCE(SUM(fb.number_of_jobs_with_higher_education), 0) + 
+                    COALESCE(SUM(pf.number_of_jobs_with_higher_education), 0) + 
+                    COALESCE(SUM(tr.number_of_jobs_with_higher_education), 0) AS total_higher_edu_jobs
+                FROM BUILDINGS b
+                LEFT JOIN FACTORY_BLUEPRINTS fb ON b.blueprint = fb.id
+                LEFT JOIN PUBLIC_FACILITY_BLUEPRINTS pf ON b.blueprint = pf.id
+                LEFT JOIN TEMPORARY_RESIDENCE_BUILDING_BLUEPRINTS tr ON b.blueprint = tr.id
+                WHERE b.id = ?
+                """;
+        }
+        else if (settlementId != null) {
+            sql = """
+                SELECT 
+                    COALESCE(SUM(fb.number_of_jobs), 0) + 
+                    COALESCE(SUM(pf.number_of_jobs), 0) + 
+                    COALESCE(SUM(tr.number_of_jobs), 0) AS total_jobs,
+                    COALESCE(SUM(fb.number_of_jobs_with_higher_education), 0) + 
+                    COALESCE(SUM(pf.number_of_jobs_with_higher_education), 0) + 
+                    COALESCE(SUM(tr.number_of_jobs_with_higher_education), 0) AS total_higher_edu_jobs
+                FROM BUILDINGS b
+                LEFT JOIN FACTORY_BLUEPRINTS fb ON b.blueprint = fb.id
+                LEFT JOIN PUBLIC_FACILITY_BLUEPRINTS pf ON b.blueprint = pf.id
+                LEFT JOIN TEMPORARY_RESIDENCE_BUILDING_BLUEPRINTS tr ON b.blueprint = tr.id
+                WHERE b.settlement = ?
+                """;
+        }
+        else {
+            sql = """
+                SELECT 
+                    COALESCE(SUM(fb.number_of_jobs), 0) + 
+                    COALESCE(SUM(pf.number_of_jobs), 0) + 
+                    COALESCE(SUM(tr.number_of_jobs), 0) AS total_jobs,
+                    COALESCE(SUM(fb.number_of_jobs_with_higher_education), 0) + 
+                    COALESCE(SUM(pf.number_of_jobs_with_higher_education), 0) + 
+                    COALESCE(SUM(tr.number_of_jobs_with_higher_education), 0) AS total_higher_edu_jobs
+                FROM BUILDINGS b
+                LEFT JOIN FACTORY_BLUEPRINTS fb ON b.blueprint = fb.id
+                LEFT JOIN PUBLIC_FACILITY_BLUEPRINTS pf ON b.blueprint = pf.id
+                LEFT JOIN TEMPORARY_RESIDENCE_BUILDING_BLUEPRINTS tr ON b.blueprint = tr.id
+                """;
+        }
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            // Устанавливаем параметры (каждый параметр повторяется для двух мест в условии)
-            if (settlementId == null) {
-                stmt.setNull(1, Types.INTEGER);
-                stmt.setNull(2, Types.INTEGER);
-            } else {
+        
+            if (buildingId != null)
+                stmt.setInt(1, buildingId);
+            else if (settlementId != null)
                 stmt.setInt(1, settlementId);
-                stmt.setInt(2, settlementId);
-            }
-
-            if (buildingId == null) {
-                stmt.setNull(3, Types.INTEGER);
-                stmt.setNull(4, Types.INTEGER);
-            } else {
-                stmt.setInt(3, buildingId);
-                stmt.setInt(4, buildingId);
-            }
-
+        
             ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return new JobsReportDto(
-                        rs.getInt("total_jobs"),
-                        rs.getInt("total_higher_edu_jobs")
-                );
-            }
+            if (rs.next())
+                return new JobsReportDto(rs.getInt("total_jobs"), rs.getInt("total_higher_edu_jobs"));
+
             return new JobsReportDto(0, 0);
         }
     }
 
     // 6
-    public double getMaxResourceStorage(String resourceName, Integer settlementId) throws SQLException {
+    public double getTotalResourceStorage(String resourceName, Integer settlementId) throws SQLException {
         String sql;
         if (settlementId == null) {
-            sql = "SELECT MAX(ss.quantity) AS max_storage " +
-                    "FROM RESOURCE_STORAGE_SIZES ss " +
-                    "JOIN RESOURCES r ON ss.resource_id = r.id " +
-                    "WHERE r.name = ?";
-        } else {
-            sql = "SELECT MAX(ss.quantity) AS max_storage " +
-                    "FROM RESOURCE_STORAGE_SIZES ss " +
-                    "JOIN RESOURCES r ON ss.resource_id = r.id " +
-                    "JOIN BUILDINGS b ON ss.building_blueprint_id = b.blueprint " +
-                    "WHERE r.name = ? AND b.settlement = ?";
+            sql = "SELECT COALESCE(SUM(ss.quantity), 0) AS total_storage " +
+                  "FROM RESOURCE_STORAGE_SIZES ss " +
+                  "JOIN RESOURCES r ON ss.resource_id = r.id " +
+                  "WHERE r.name = ?";
+        }
+        else {
+            sql = "SELECT COALESCE(SUM(ss.quantity), 0) AS total_storage " +
+                  "FROM RESOURCE_STORAGE_SIZES ss " +
+                  "JOIN RESOURCES r ON ss.resource_id = r.id " +
+                  "JOIN BUILDINGS b ON ss.building_blueprint_id = b.blueprint " +
+                  "WHERE r.name = ? AND b.settlement = ?";
         }
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setString(1, resourceName);
-            if (settlementId != null) stmt.setInt(2, settlementId);
+            if (settlementId != null)
+                 stmt.setInt(2, settlementId);
             ResultSet rs = stmt.executeQuery();
-            return rs.next() ? rs.getDouble("max_storage") : 0.0;
+
+            return rs.next() ? rs.getDouble("total_storage") : 0.0;
         }
     }
 
     // 7
-    public ConstructionCostDto getBuildingConstructionCost(List<Integer> buildingIds) throws SQLException {
-        if (buildingIds == null || buildingIds.isEmpty()) {
-            return new ConstructionCostDto(0.0, 0);
-        }
+    public ConstructionDetailsDto getBuildingConstructionCost(List<Integer> blueprintIds) throws SQLException {
+        if (blueprintIds == null || blueprintIds.isEmpty())
+            return new ConstructionDetailsDto(List.of(), 0);
 
-        String placeholders = String.join(",", Collections.nCopies(buildingIds.size(), "?"));
-        String sql = "SELECT " +
-                "   COALESCE(SUM(bcr.quantity), 0) AS total_resources, " +
-                "   COALESCE(SUM(bb.number_of_workdays), 0) AS total_workdays " +
-                "FROM BUILDINGS b " +
-                "JOIN BUILDING_BLUEPRINTS bb ON b.blueprint = bb.id " +
-                "LEFT JOIN BUILDING_CONSTRUCTION_RESOURCES bcr ON bb.id = bcr.building_blueprint_id " +
-                "WHERE b.id IN (" + placeholders + ")";
+        String placeholders = String.join(",", Collections.nCopies(blueprintIds.size(), "?"));
+
+        String sqlResources = """
+            SELECT r.name AS resource_name, COALESCE(SUM(bcr.quantity), 0) AS total_quantity
+            FROM BUILDING_BLUEPRINTS bb
+            LEFT JOIN BUILDING_CONSTRUCTION_RESOURCES bcr ON bb.id = bcr.building_blueprint_id
+            LEFT JOIN RESOURCES r ON bcr.resource_id = r.id
+            WHERE bb.id IN (%s)
+            GROUP BY r.name
+            """.formatted(placeholders);
+
+        String sqlWorkdays = """
+            SELECT COALESCE(SUM(bb.number_of_workdays), 0) AS total_workdays
+            FROM BUILDING_BLUEPRINTS bb
+            WHERE bb.id IN (%s)
+            """.formatted(placeholders);
 
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            for (int i = 0; i < buildingIds.size(); i++) {
-                stmt.setInt(i + 1, buildingIds.get(i));
+             PreparedStatement stmtResources = conn.prepareStatement(sqlResources);
+             PreparedStatement stmtWorkdays = conn.prepareStatement(sqlWorkdays)) {
+
+            for (int i = 0; i < blueprintIds.size(); i++) {
+                stmtResources.setInt(i + 1, blueprintIds.get(i));
+                stmtWorkdays.setInt(i + 1, blueprintIds.get(i));
             }
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return new ConstructionCostDto(
-                        rs.getDouble("total_resources"),
-                        rs.getInt("total_workdays")
-                );
+
+            List<ResourceRequirementDto> resources = new ArrayList<>();
+            try (ResultSet rsResources = stmtResources.executeQuery()) {
+                while (rsResources.next()) {
+                    String name = rsResources.getString("resource_name");
+                    if (name != null) { // если ресурсов нет — пропускаем
+                        double qty = rsResources.getDouble("total_quantity");
+                        resources.add(new ResourceRequirementDto(name, qty));
+                    }
+                }
             }
-            return new ConstructionCostDto(0.0, 0);
+
+            int totalWorkdays = 0;
+            try (ResultSet rsWorkdays = stmtWorkdays.executeQuery()) {
+                if (rsWorkdays.next())
+                    totalWorkdays = rsWorkdays.getInt("total_workdays");
+            }
+
+            return new ConstructionDetailsDto(resources, totalWorkdays);
         }
     }
 
     // 8
-    public ConstructionCostDto getTransportConstructionCost(List<Integer> transportIds) throws SQLException {
-        if (transportIds == null || transportIds.isEmpty()) {
-            return new ConstructionCostDto(0.0, 0);
-        }
+    public ConstructionDetailsDto getTransportConstructionCost(List<Integer> transportBlueprintIds) throws SQLException {
+        if (transportBlueprintIds == null || transportBlueprintIds.isEmpty())
+            return new ConstructionDetailsDto(List.of(), 0);
 
-        String placeholders = String.join(",", Collections.nCopies(transportIds.size(), "?"));
-        String sql = "SELECT " +
-                "   COALESCE(SUM(tcr.quantity), 0) AS total_resources, " +
-                "   COALESCE(SUM(tb.number_of_workdays), 0) AS total_workdays " +
-                "FROM TRANSPORT t " +
-                "JOIN TRANSPORT_BLUEPRINTS tb ON t.blueprint = tb.id " +
-                "LEFT JOIN TRANSPORT_CONSTRUCTION_RESOURCES tcr ON tb.id = tcr.transport_blueprint_id " +
-                "WHERE t.id IN (" + placeholders + ")";
+        String placeholders = String.join(",", Collections.nCopies(transportBlueprintIds.size(), "?"));
+
+        String sqlResources = """
+            SELECT r.name AS resource_name, COALESCE(SUM(tcr.quantity), 0) AS total_quantity
+            FROM TRANSPORT_BLUEPRINTS tb
+            LEFT JOIN TRANSPORT_CONSTRUCTION_RESOURCES tcr ON tb.id = tcr.transport_blueprint_id
+            LEFT JOIN RESOURCES r ON tcr.resource_id = r.id
+            WHERE tb.id IN (%s)
+            GROUP BY r.name
+            """.formatted(placeholders);
+
+        String sqlWorkdays = """
+            SELECT COALESCE(SUM(tb.number_of_workdays), 0) AS total_workdays
+            FROM TRANSPORT_BLUEPRINTS tb
+            WHERE tb.id IN (%s)
+            """.formatted(placeholders);
 
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            for (int i = 0; i < transportIds.size(); i++) {
-                stmt.setInt(i + 1, transportIds.get(i));
+             PreparedStatement stmtResources = conn.prepareStatement(sqlResources);
+             PreparedStatement stmtWorkdays = conn.prepareStatement(sqlWorkdays)) {
+
+            for (int i = 0; i < transportBlueprintIds.size(); i++) {
+                stmtResources.setInt(i + 1, transportBlueprintIds.get(i));
+                stmtWorkdays.setInt(i + 1, transportBlueprintIds.get(i));
             }
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return new ConstructionCostDto(
-                        rs.getDouble("total_resources"),
-                        rs.getInt("total_workdays")
-                );
+
+            List<ResourceRequirementDto> resources = new ArrayList<>();
+            try (ResultSet rsResources = stmtResources.executeQuery()) {
+                while (rsResources.next()) {
+                    String name = rsResources.getString("resource_name");
+                    if (name != null)
+                        resources.add(new ResourceRequirementDto(name, rsResources.getDouble("total_quantity")));
+                }
             }
-            return new ConstructionCostDto(0.0, 0);
+
+            int totalWorkdays = 0;
+            try (ResultSet rsWorkdays = stmtWorkdays.executeQuery()) {
+                if (rsWorkdays.next())
+                    totalWorkdays = rsWorkdays.getInt("total_workdays");
+            }
+
+            return new ConstructionDetailsDto(resources, totalWorkdays);
         }
     }
 
@@ -382,17 +444,20 @@ public class QueryService {
     }
 
     // 12
-    public double getMaxStorageInPublicFacility(String resourceName) throws SQLException {
+    public double getMaxStorageInNonStorageBuildings(String resourceName) throws SQLException {
         String sql = "SELECT MAX(ss.quantity) AS max_storage " +
-                "FROM RESOURCE_STORAGE_SIZES ss " +
-                "JOIN RESOURCES r ON ss.resource_id = r.id " +
-                "JOIN PUBLIC_FACILITY_BLUEPRINTS pf ON ss.building_blueprint_id = pf.id " +
-                "WHERE r.name = ?";
+                 "FROM RESOURCE_STORAGE_SIZES ss " +
+                 "JOIN RESOURCES r ON ss.resource_id = r.id " +
+                 "JOIN BUILDING_BLUEPRINTS bb ON ss.building_blueprint_id = bb.id " +
+                 "WHERE r.name = ? " +
+                 "  AND bb.blueprint_type != 'хранилище'";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setString(1, resourceName);
             ResultSet rs = stmt.executeQuery();
+
             return rs.next() ? rs.getDouble("max_storage") : 0.0;
         }
     }
