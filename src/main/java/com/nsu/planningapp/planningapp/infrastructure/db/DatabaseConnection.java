@@ -6,11 +6,17 @@ import java.sql.SQLException;
 
 
 public class DatabaseConnection {
+    static String dbName = "socialist_country_example";
+
     static String JDBC_URL = String.format(
-            "jdbc:postgresql://localhost:5432/socialist_country_example?currentSchema=public&user=%s&password=%s",
+            "jdbc:postgresql://localhost:5432/" + dbName + "?currentSchema=public&user=%s&password=%s",
             System.getenv("DB_USER"),
             System.getenv("DB_PASSWORD")
     );
+
+    public static String getDBName() {
+        return dbName;
+    }
 
     public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(JDBC_URL);
