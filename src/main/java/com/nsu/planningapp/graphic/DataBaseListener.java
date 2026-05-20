@@ -16,8 +16,12 @@ public interface DataBaseListener {
 	public int getTotalResidentCapacity(Integer settlementId) throws Exception;
 	// 2
 	public List<BuildingDto> getBuildingsByType(String blueprintType, String settlementName) throws Exception;
+	// 3
+	public int getMaxResourceProduction(Integer resourceId, Integer settlementId) throws Exception;
 
 	public List<String> getAllSettlements() throws Exception;
 	public Integer getSettlementId(String cityName) throws Exception;
 	public List<String> getAllBlueprintTypes() throws Exception;
+	public List<String> getAllResourcesNames() throws Exception;
+	public Integer getResourceId(String resourceName) throws Exception;
 }

@@ -183,11 +183,14 @@ public class GraphicInterface extends JFrame {
 		JMenuItem buildingsByTypeItem = createMenuItem("2.\tПеречень зданий по типу");
 		buildingsByTypeItem.addActionListener(e -> showBuildingsByTypeDialogs());
 
+		JMenuItem resourceProductionItem = createMenuItem("3.\tМаксимальное производство");
+		resourceProductionItem.addActionListener(e -> showResourceProductionDialogs());
+
 		
 
 		res.add(residentCapacityItem);
 		res.add(buildingsByTypeItem);
-		
+		res.add(resourceProductionItem);
 
 		return res;
 	}
@@ -380,9 +383,9 @@ public class GraphicInterface extends JFrame {
 
 					showSingleNumberResult("Общая жилая вместимость", capacity);
 				}
-				catch (Exception e) {
+				catch (Exception ex) {
 					showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
-						"Ошибка выполнения запроса 1: " + e.getMessage(),
+						"Ошибка выполнения запроса 1: " + ex.getMessage(),
 						"query error");
 				}
 			});
@@ -406,7 +409,7 @@ public class GraphicInterface extends JFrame {
 		try {
 			List<String> types = dbListener.getAllBlueprintTypes();
 			if (types.isEmpty()) {
-				showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+				showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
 					"Нет типов зданий", "query error");
 
 				return;
@@ -446,9 +449,9 @@ public class GraphicInterface extends JFrame {
 					else
 						showBuildingDtoList(buildings);
 				}
-				catch (Exception e) {
+				catch (Exception ex) {
 					showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
-						"Ошибка выполнения запроса 2: " + e.getMessage(),
+						"Ошибка выполнения запроса 2: " + ex.getMessage(),
 						"query error");
 				}
 			});
@@ -456,6 +459,85 @@ public class GraphicInterface extends JFrame {
 		catch (Exception e) {
 			showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
 				"Ошибка выполнения запроса 2: " + e.getMessage(),
+				"query error");
+		}
+	}
+
+	private void showResourceProductionDialogs() {
+		if (!isConnected) {
+			showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+				"Вы не подключены к базе данных",
+				"ready request 3");
+
+			return;
+		}
+
+		try {
+			List<String> resources = dbListener.getAllResourcesNames();
+			if (resources.isEmpty()) {
+				showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+					"Нет ресурсов", "query error");
+
+				return;
+			}
+
+			List<String> settlements = dbListener.getAllSettlements();
+			String[] settlementOptions = new String[settlements.size() + 1];
+			settlementOptions[0] = "Вся страна";
+			for (int i = 1; i <= settlements.size(); i++)
+				settlementOptions[i] = settlements.get(i - 1);
+
+			JComboBox<String> resourcesCombo = createCustomComboBox(resources.toArray(new String[0]));
+			JComboBox<String> settlementCombo = createCustomComboBox(settlementOptions);
+
+			JPanel panel = createCustomPanel(new GridLayout(2, 2, 10, 10));
+			panel.add(createTextLabel("Ресурс:"));
+			panel.add(resourcesCombo);
+			panel.add(createTextLabel("Населенный пункт:"));
+			panel.add(settlementCombo);
+
+			showCustomOkCancelOptionDialog(panel, "перечень зданий по типу", () -> {
+				try {
+					String selectedResource = (String) resourcesCombo.getSelectedItem();
+					String selectedSettlement = (String) settlementCombo.getSelectedItem();
+					if (selectedSettlement.equals("Вся страна"))
+						selectedSettlement = null;
+
+					Integer resourceId = null;
+					resourceId = dbListener.getResourceId(selectedResource);
+					if (resourceId == null) {
+						showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+							"Ресурс " + resourceId + " не найден в базе",
+							"query error");
+					
+						return;
+					}
+
+					Integer settlementId = null;
+					if (selectedSettlement != null) {
+						settlementId = dbListener.getSettlementId(selectedSettlement);
+						if (settlementId == null) {
+							showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+								"Город не найден", "query error");
+
+							return;
+						}
+					}
+
+					int production = dbListener.getMaxResourceProduction(resourceId, settlementId);
+					showSingleNumberResult("Максимальное производство ресурса \""
+								+ selectedResource + "\"", production);
+				}
+				catch (Exception ex) {
+					showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+						"Ошибка выполнения запроса 3: " + ex.getMessage(),
+						"query error");
+				}
+			});
+		}
+		catch (Exception e) {
+			showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+				"Ошибка выполнения запроса 3: " + e.getMessage(),
 				"query error");
 		}
 	}

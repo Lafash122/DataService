@@ -53,6 +53,12 @@ public class DataBaseInformant implements DataBaseListener {
 		return queryService.getBuildingsByType(blueprintType, settlementName);
 	}
 
+	// 3
+	@Override
+	public int getMaxResourceProduction(Integer resourceId, Integer settlementId) throws Exception {
+		return queryService.getMaxResourceProduction(resourceId, settlementId);
+	}
+
 
 	@Override
 	public List<String> getAllSettlements() throws Exception {
@@ -67,5 +73,15 @@ public class DataBaseInformant implements DataBaseListener {
 	@Override
 	public List<String> getAllBlueprintTypes() throws Exception {
 		return PreliminaryQueryService.getAllBlueprintTypes();
+	}
+
+	@Override
+	public List<String> getAllResourcesNames() throws Exception {
+		return PreliminaryQueryService.getAllResourcesNames();
+	}
+
+	@Override
+	public Integer getResourceId(String resourceName) throws Exception {
+		return PreliminaryQueryService.getResourceId(resourceName);
 	}
 }

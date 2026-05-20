@@ -71,6 +71,26 @@ public class QueryService {
     }
 
     // 3
+    public int getMaxResourceProduction(Integer resourceId, Integer cityId) throws SQLException {
+        String sql = "SELECT COALESCE(SUM(rp.quantity), 0) FROM AMOUNT_OF_RESOURCES_PRODUCED rp " +
+                    "JOIN BUILDINGS b ON b.blueprint = rp.factory_blueprint_id " +
+                    "WHERE rp.resource_id = ?";
+        if (cityId != null)
+            sql += " AND b.settlement = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, resourceId);
+            if (cityId != null) {
+                stmt.setInt(2, cityId);
+            }
+
+            ResultSet rs = stmt.executeQuery();
+            return rs.next() ? rs.getInt(1) : 0;
+        }
+    }
+/*
     public int getMaxResourceProduction(String resourceName, Integer cityId) throws SQLException {
         String sql;
         if (cityId == null) {
@@ -96,7 +116,7 @@ public class QueryService {
             return rs.next() ? rs.getInt(1) : 0;
         }
     }
-
+*/
     // 4
     public int getMaxResourceConsumption(String resourceName, Integer settlementId) throws SQLException {
         String sql;
