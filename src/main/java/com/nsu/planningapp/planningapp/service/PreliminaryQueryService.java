@@ -50,7 +50,7 @@ public class PreliminaryQueryService {
         }
     }
 
-    public Integer getTransportBlueprintId(String transportName) throws SQLException {
+    public static Integer getTransportBlueprintId(String transportName) throws SQLException {
         String sql = "SELECT id FROM TRANSPORT_BLUEPRINTS WHERE name = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -76,7 +76,7 @@ public class PreliminaryQueryService {
         }
     }
 
-    public Integer getResourceId(String resourceName) throws SQLException {
+    public static Integer getResourceId(String resourceName) throws SQLException {
         String sql = "SELECT id FROM RESOURCES WHERE name = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -87,7 +87,7 @@ public class PreliminaryQueryService {
     }
 
     // Building blueprint types
-    public List<String> getAllBlueprintTypes() throws SQLException {
+    public static List<String> getAllBlueprintTypes() throws SQLException {
         String sql = "SELECT DISTINCT blueprint_type FROM BUILDING_BLUEPRINTS ORDER BY blueprint_type";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -103,7 +103,7 @@ public class PreliminaryQueryService {
     }
 
     // Constructed buildings
-    public List<String> getAllBuildings() throws SQLException {
+    public static List<String> getAllBuildings() throws SQLException {
         String sql = "SELECT DISTINCT bb.name FROM BUILDINGS b " +
                      "JOIN BUILDING_BLUEPRINTS bb ON b.blueprint = bb.id ORDER BY bb.name";
 
@@ -119,7 +119,7 @@ public class PreliminaryQueryService {
         }
     }
 
-    public List<String> getBuildingsBySettlement(String settlementName) throws SQLException {
+    public static List<String> getBuildingsBySettlement(String settlementName) throws SQLException {
         String sql = "SELECT bb.name FROM BUILDINGS b " +
                      "JOIN SETTLEMENTS s ON b.settlement = s.id " +
                      "JOIN BUILDING_BLUEPRINTS bb ON b.blueprint = bb.id " +
@@ -139,7 +139,7 @@ public class PreliminaryQueryService {
         }
     }
 
-    public Integer getBuildingId(String buildingName) throws SQLException {
+    public static Integer getBuildingId(String buildingName) throws SQLException {
         String sql = "SELECT b.id FROM BUILDINGS b " +
                      "JOIN BUILDING_BLUEPRINTS bb ON b.blueprint = bb.id WHERE bb.name = ? LIMIT 1";
 
@@ -153,7 +153,7 @@ public class PreliminaryQueryService {
     }
 
     // Constructed vehicles
-    public Integer getTransportId(String transportName) throws SQLException {
+    public static Integer getTransportId(String transportName) throws SQLException {
         String sql = "SELECT id FROM TRANSPORT WHERE blueprint = (SELECT id FROM TRANSPORT_BLUEPRINTS WHERE name = ?) LIMIT 1";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -164,7 +164,7 @@ public class PreliminaryQueryService {
         }
     }
 
-    public List<Integer> getTransportIdsByName(List<String> transportNames) throws SQLException {
+    public static List<Integer> getTransportIdsByName(List<String> transportNames) throws SQLException {
         List<Integer> ids = new ArrayList<>();
         for (String name : transportNames) {
             Integer id = getTransportId(name);

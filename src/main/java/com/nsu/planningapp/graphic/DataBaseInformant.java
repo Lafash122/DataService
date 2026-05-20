@@ -4,6 +4,7 @@ import com.nsu.planningapp.planningapp.infrastructure.db.DatabaseInitializer;
 import com.nsu.planningapp.planningapp.infrastructure.db.DatabaseConnection;
 import com.nsu.planningapp.planningapp.service.QueryService;
 import com.nsu.planningapp.planningapp.service.PreliminaryQueryService;
+import com.nsu.planningapp.planningapp.dto.*;
 
 import java.sql.Connection;
 import java.util.List;
@@ -46,6 +47,12 @@ public class DataBaseInformant implements DataBaseListener {
 		return queryService.getTotalResidentCapacity(settlementId);
 	}
 
+	// 2
+	@Override
+	public List<BuildingDto> getBuildingsByType(String blueprintType, String settlementName) throws Exception {
+		return queryService.getBuildingsByType(blueprintType, settlementName);
+	}
+
 
 	@Override
 	public List<String> getAllSettlements() throws Exception {
@@ -55,5 +62,10 @@ public class DataBaseInformant implements DataBaseListener {
 	@Override
 	public Integer getSettlementId(String cityName) throws Exception {
 		return PreliminaryQueryService.getSettlementId(cityName);
+	}
+
+	@Override
+	public List<String> getAllBlueprintTypes() throws Exception {
+		return PreliminaryQueryService.getAllBlueprintTypes();
 	}
 }

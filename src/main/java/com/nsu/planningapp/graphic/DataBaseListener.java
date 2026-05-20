@@ -1,5 +1,7 @@
 package com.nsu.planningapp.graphic;
 
+import com.nsu.planningapp.planningapp.dto.*;
+
 import java.sql.Connection;
 import java.util.List;
 
@@ -12,7 +14,10 @@ public interface DataBaseListener {
 
 	// 1
 	public int getTotalResidentCapacity(Integer settlementId) throws Exception;
+	// 2
+	public List<BuildingDto> getBuildingsByType(String blueprintType, String settlementName) throws Exception;
 
 	public List<String> getAllSettlements() throws Exception;
 	public Integer getSettlementId(String cityName) throws Exception;
+	public List<String> getAllBlueprintTypes() throws Exception;
 }

@@ -1,6 +1,7 @@
 package com.nsu.planningapp.graphic.UI;
 
 import com.nsu.planningapp.graphic.*;
+import com.nsu.planningapp.planningapp.dto.*;
 
 import javax.swing.*;
 import javax.swing.event.*;
@@ -9,6 +10,7 @@ import javax.swing.plaf.ScrollBarUI;
 import java.awt.*;
 import java.sql.Connection;
 import java.util.List;
+import java.util.ArrayList;
 
 public class GraphicInterface extends JFrame {
 	private boolean isConnected = false;
@@ -25,7 +27,8 @@ public class GraphicInterface extends JFrame {
 
 	private static final Font menuFont = new Font("Arial", Font.PLAIN, 12);
 	private static final Font toolTipFont = new Font("Dubai", Font.PLAIN, 12);
-	private final Font tableFont = new Font("Ubuntu", Font.PLAIN, DEFAULT_TEXT_SIZE);
+	private static final Font defaultTextFont = new Font("Arial", Font.BOLD, 14);
+	private Font tableFont = new Font("Ubuntu", Font.PLAIN, DEFAULT_TEXT_SIZE);
 
 	private JTable resultTable;
 	private DefaultTableModel tableModel;
@@ -88,38 +91,6 @@ public class GraphicInterface extends JFrame {
 
 		return res;
 	}
-
-	private JMenu createMainMenu(String title) {
-		JMenu res = new JMenu(title);
-
-		res.setBorderPainted(false);
-		res.getPopupMenu().setOpaque(true);
-		res.getPopupMenu().setBorder(BorderFactory.createLineBorder(contourColor, 1));
-
-		return res;
-	}
-
-	private JMenu createSubMenu(String title, String toolTip) {
-		JMenu res = new JMenu(title) {
-			@Override
-			public JToolTip createToolTip() {
-				JToolTip tt = super.createToolTip();
-				tt.setBackground(menuColor);
-				tt.setBorder(BorderFactory.createLineBorder(contourColor, 1));
-				tt.setForeground(fontColor);
-				tt.setFont(toolTipFont);
-
-				return tt;
-			}
-		};
-
-		res.setToolTipText(toolTip);
-		res.setBorderPainted(false);
-		res.getPopupMenu().setOpaque(true);
-		res.getPopupMenu().setBorder(BorderFactory.createLineBorder(contourColor, 1));
-
-		return res;
-	}
 	
 	private JMenuItem createMenuItem(String title) {
 		JMenuItem res = new JMenuItem(title);
@@ -145,14 +116,6 @@ public class GraphicInterface extends JFrame {
 
 		res.setBorderPainted(false);
 		res.setToolTipText(toolTip);
-
-		return res;
-	}
-
-	private JButton createButton(String title) {
-		JButton res = new JButton(title);
-
-		res.setFocusPainted(false);
 
 		return res;
 	}
@@ -217,7 +180,14 @@ public class GraphicInterface extends JFrame {
 		JMenuItem residentCapacityItem = createMenuItem("1.\tКоличество жилья");
 		residentCapacityItem.addActionListener(e -> showTotalResidentCapacityDialogs());
 
+		JMenuItem buildingsByTypeItem = createMenuItem("2.\tПеречень зданий по типу");
+		buildingsByTypeItem.addActionListener(e -> showBuildingsByTypeDialogs());
+
+		
+
 		res.add(residentCapacityItem);
+		res.add(buildingsByTypeItem);
+		
 
 		return res;
 	}
@@ -384,36 +354,108 @@ public class GraphicInterface extends JFrame {
 			for (int i = 1; i <= settlements.size(); i++)
 				chooseOptions[i] = settlements.get(i - 1);
 
-			String choice = (String) JOptionPane.showInputDialog(this,
-				"Выберите населённый пункт или всю страну:",
-				"W&R:SR - data service: количества жилья",
-				JOptionPane.QUESTION_MESSAGE,
-				null,
-				chooseOptions,
-				chooseOptions[0]);
+			JComboBox<String> settlementCombo = createCustomComboBox(chooseOptions);
 
-			if (choice == null)
-				return;
+			JPanel panel = createCustomPanel(new GridLayout(1, 2, 10, 10));
+			panel.add(createTextLabel("Населенный пункт:"));
+			panel.add(settlementCombo);
 
-			Integer settlementId = null;
-			if (!choice.equals("Вся страна")) {
-				settlementId = dbListener.getSettlementId(choice);
-				if (settlementId == null) {
-					showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
-						"Город " + choice + " не найден в базе",
-						"query error");
+			showCustomOkCancelOptionDialog(panel, "количество жилья", () -> {
+				String selectedSettlement = (String) settlementCombo.getSelectedItem();
+				try {
+
+					Integer settlementId = null;
+					if (!selectedSettlement.equals("Вся страна")) {
+						settlementId = dbListener.getSettlementId(selectedSettlement);
+						if (settlementId == null) {
+							showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+								"Город " + selectedSettlement + " не найден в базе",
+								"query error");
 					
-					return;
+							return;
+						}
+					}
+
+					int capacity = dbListener.getTotalResidentCapacity(settlementId);
+
+					showSingleNumberResult("Общая жилая вместимость", capacity);
 				}
-			}
-
-			int capacity = dbListener.getTotalResidentCapacity(settlementId);
-
-			showSingleNumberResult("Общая жилая вместимость", capacity);
+				catch (Exception e) {
+					showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+						"Ошибка выполнения запроса 1: " + e.getMessage(),
+						"query error");
+				}
+			});
 		}
 		catch (Exception e) {
 			showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
 				"Ошибка выполнения запроса 1: " + e.getMessage(),
+				"query error");
+		}
+	}
+
+	private void showBuildingsByTypeDialogs() {
+		if (!isConnected) {
+			showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+				"Вы не подключены к базе данных",
+				"ready request 2");
+
+			return;
+		}
+
+		try {
+			List<String> types = dbListener.getAllBlueprintTypes();
+			if (types.isEmpty()) {
+				showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+					"Нет типов зданий", "query error");
+
+				return;
+			}
+
+			List<String> settlements = dbListener.getAllSettlements();
+			String[] settlementOptions = new String[settlements.size() + 1];
+			settlementOptions[0] = "Вся страна";
+			for (int i = 1; i <= settlements.size(); i++)
+				settlementOptions[i] = settlements.get(i - 1);
+
+			JComboBox<String> typeCombo = createCustomComboBox(types.toArray(new String[0]));
+			JComboBox<String> settlementCombo = createCustomComboBox(settlementOptions);
+
+			JPanel panel = createCustomPanel(new GridLayout(2, 2, 10, 10));
+			panel.add(createTextLabel("Тип здания:"));
+			panel.add(typeCombo);
+			panel.add(createTextLabel("Населенный пункт:"));
+			panel.add(settlementCombo);
+
+			showCustomOkCancelOptionDialog(panel, "перечень зданий по типу", () -> {
+				try {
+					String selectedType = (String) typeCombo.getSelectedItem();
+					String selectedSettlement = (String) settlementCombo.getSelectedItem();
+					if (selectedSettlement.equals("Вся страна"))
+						selectedSettlement = null;
+
+					List<BuildingDto> buildings = dbListener.getBuildingsByType(selectedType, selectedSettlement);
+					if (buildings.isEmpty()) {
+						showBuildingDtoList(new ArrayList<>());
+
+ 						showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+							"Нет зданий типа '" + selectedType + "'" +
+							(selectedSettlement == null ? " по всей стране" : " в городе " + selectedSettlement),
+							"ready request 2");
+					}
+					else
+						showBuildingDtoList(buildings);
+				}
+				catch (Exception e) {
+					showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+						"Ошибка выполнения запроса 2: " + e.getMessage(),
+						"query error");
+				}
+			});
+		}
+		catch (Exception e) {
+			showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+				"Ошибка выполнения запроса 2: " + e.getMessage(),
 				"query error");
 		}
 	}
@@ -434,15 +476,133 @@ public class GraphicInterface extends JFrame {
 
 		customPane.setOptions(new Object[] { okButton });
 
+		customDialog.pack();
 		customDialog.setVisible(true); 
 	}
 
-	private void showSingleNumberResult(String title, Number value) {
+	private void showCustomOkCancelOptionDialog(JPanel panel, String headMsg, Runnable onOk) {
+		JOptionPane customPane = new JOptionPane(panel,
+				JOptionPane.PLAIN_MESSAGE,
+				JOptionPane.DEFAULT_OPTION,
+				null,
+				new Object[]{});
+
+		JDialog customDialog = customPane.createDialog(this, "W&R:SR - data service: " + headMsg);
+
+		JButton okButton = createButton("Выполнить");
+		JButton cancelButton = createButton("Отмена");
+		customPane.setOptions(new Object[] { okButton, cancelButton });
+
+		okButton.addActionListener(e -> {
+			customDialog.dispose();
+			if (onOk != null)
+				onOk.run();
+		});
+		cancelButton.addActionListener(e -> customDialog.dispose());
+
+		customDialog.pack();
+		customDialog.setVisible(true);
+	}
+
+
+
+	private JMenu createMainMenu(String title) {
+		JMenu res = new JMenu(title);
+
+		res.setBorderPainted(false);
+		res.getPopupMenu().setOpaque(true);
+		res.getPopupMenu().setBorder(BorderFactory.createLineBorder(contourColor, 1));
+
+		return res;
+	}
+
+	private JMenu createSubMenu(String title, String toolTip) {
+		JMenu res = new JMenu(title) {
+			@Override
+			public JToolTip createToolTip() {
+				JToolTip tt = super.createToolTip();
+				tt.setBackground(menuColor);
+				tt.setBorder(BorderFactory.createLineBorder(contourColor, 1));
+				tt.setForeground(fontColor);
+				tt.setFont(toolTipFont);
+
+				return tt;
+			}
+		};
+
+		res.setToolTipText(toolTip);
+		res.setBorderPainted(false);
+		res.getPopupMenu().setOpaque(true);
+		res.getPopupMenu().setBorder(BorderFactory.createLineBorder(contourColor, 1));
+
+		return res;
+	}
+
+	private JButton createButton(String title) {
+		JButton res = new JButton(title);
+
+		res.setFocusPainted(false);
+
+		return res;
+	}
+
+	private JComboBox<String> createCustomComboBox(String[] items) {
+		JComboBox<String> res = new JComboBox<>(items);
+
+		res.setBackground(menuColor);
+		res.setForeground(fontColor);
+		res.setFont(defaultTextFont);
+
+		return res;
+	}
+
+	private JPanel createCustomPanel(LayoutManager layout) {
+		JPanel res = new JPanel(layout);
+
+		res.setBackground(menuColor);
+
+		return res;
+	}
+
+	private JLabel createTextLabel(String title) {
+		JLabel res = new JLabel(title);
+
+		res.setBackground(menuColor);
+		res.setForeground(fontColor);
+		res.setFont(defaultTextFont);
+
+		return res;
+	}
+
+
+
+	private void clearTable() {
 		tableModel.setRowCount(0);
 		tableModel.setColumnCount(0);
+	}
+
+	private void showSingleNumberResult(String title, Number value) {
+		clearTable();
 
 		tableModel.addColumn(title);
 		tableModel.addRow(new Object[]{ value });
+	}
+
+	private void showBuildingDtoList(List<BuildingDto> buildings) {
+		clearTable();
+
+		tableModel.addColumn("ID");
+		tableModel.addColumn("Населенный пункт");
+		tableModel.addColumn("Здание");
+		tableModel.addColumn("Тип здания");
+
+		for (BuildingDto b : buildings)
+			tableModel.addRow(new Object[]{
+				b.id(),
+				b.settlementName(),
+				b.blueprintName(),
+				b.blueprintType()
+			});
 	}
 
 

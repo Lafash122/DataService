@@ -34,7 +34,6 @@ public class CustomScrollBarUI extends BasicScrollBarUI {
 
 	@Override
 	protected void configureScrollBarColors() {
-		super.configureScrollBarColors();
         	this.thumbColor = customThumbColor;
         	this.trackColor = customTrackColor;
 	}
@@ -54,7 +53,6 @@ public class CustomScrollBarUI extends BasicScrollBarUI {
 		button.setBorder(null);
 		button.setFocusPainted(false);
 		button.setBackground(customTrackColor);
-		//button.setContentAreaFilled(false);
 
 		switch (orientation) {
 			case SwingConstants.NORTH:
