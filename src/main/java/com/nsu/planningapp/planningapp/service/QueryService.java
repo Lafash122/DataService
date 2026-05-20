@@ -13,19 +13,17 @@ public class QueryService {
 
     // 1
     public int getTotalResidentCapacity(Integer settlementId) throws SQLException {
-        String sql;
-        if (settlementId == null) {
-            sql = "SELECT COALESCE(SUM(rb.number_of_residents), 0) FROM RESIDENTIAL_BUILDING_BLUEPRINTS rb";
-        } else {
-            sql = "SELECT COALESCE(SUM(rb.number_of_residents), 0) FROM RESIDENTIAL_BUILDING_BLUEPRINTS rb " +
-                  "JOIN BUILDINGS b ON b.blueprint = rb.id WHERE b.settlement = ?";
-        }
+        String sql = "SELECT COALESCE(SUM(rb.number_of_residents), 0) " +
+                    "FROM RESIDENTIAL_BUILDING_BLUEPRINTS rb " +
+                    "JOIN BUILDINGS b ON b.blueprint = rb.id";
+
+        if (settlementId != null)
+            sql += " WHERE b.settlement = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            if (settlementId != null) {
+            if (settlementId != null)
                 stmt.setInt(1, settlementId);
-            }
 
             ResultSet rs = stmt.executeQuery();
             return rs.next() ? rs.getInt(1) : 0;

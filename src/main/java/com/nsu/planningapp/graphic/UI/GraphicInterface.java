@@ -1,24 +1,36 @@
-package com.nsu.planningapp.graphic;
+package com.nsu.planningapp.graphic.UI;
+
+import com.nsu.planningapp.graphic.*;
 
 import javax.swing.*;
 import javax.swing.event.*;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.plaf.ScrollBarUI;
 import java.awt.*;
 import java.sql.Connection;
+import java.util.List;
 
 public class GraphicInterface extends JFrame {
+	private boolean isConnected = false;
+	private int DEFAULT_TEXT_SIZE = 16;
+
 	private static final Color menuColor = new Color(235, 235, 235);
 	private static final Color buttonColor = new Color(220, 220, 220);
 	private static final Color contourColor = new Color(195, 195, 195);
+	private static final Color headerColor = new Color(175, 218, 252);	// Blue-blue frost
+	private static final Color tableColor = new Color(221, 238, 255);	// Pale blue
 	private static final Color hoveredColor = new Color(213, 213, 227);
-	private static final Color pressedColor = new Color(203, 203, 222);
+	//private static final Color pressedColor = new Color(203, 203, 222);
 	private static final Color fontColor = Color.BLACK;
 
 	private static final Font menuFont = new Font("Arial", Font.PLAIN, 12);
 	private static final Font toolTipFont = new Font("Dubai", Font.PLAIN, 12);
+	private final Font tableFont = new Font("Ubuntu", Font.PLAIN, DEFAULT_TEXT_SIZE);
+
+	private JTable resultTable;
+	private DefaultTableModel tableModel;
 
 	private DataBaseListener dbListener;
-
-	private boolean isConnected = false;
 
 	private void setGlobalStyle() {
 		UIManager.put("Button.background", buttonColor);
@@ -51,10 +63,12 @@ public class GraphicInterface extends JFrame {
 		setTitle("W&R:SR - data service");
 		setSize(720, 480);
 		setMinimumSize(new Dimension(720, 480));
-		setIconImage((new ImageIcon("resources/ico64.png")).getImage());
+		setIconImage((new ImageIcon("src/main/resources/ico64.png")).getImage());
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		setJMenuBar(createMenuBar());
+
+		add(createMainPanel(), BorderLayout.CENTER);
 	}
 
 	private JMenuBar createMenuBar() {
@@ -168,6 +182,8 @@ public class GraphicInterface extends JFrame {
 		JMenuItem insertDataItem = createMenuItem("Insert", "create new data element");
 		JMenuItem editDataItem = createMenuItem("Edit", "edit existing data element");
 		JMenuItem userRequestItem = createMenuItem("User request", "write your own request");
+		userRequestItem.addActionListener(e -> showUserRequestDialogs());
+
 		JMenu readyRequestItem = createReadyRequestsMenu();
 
 		res.add(insertDataItem);
@@ -198,13 +214,47 @@ public class GraphicInterface extends JFrame {
 	private JMenu createReadyRequestsMenu() {
 		JMenu res = createSubMenu("Ready request", "choose ready request");
 
+		JMenuItem residentCapacityItem = createMenuItem("1.\tКоличество жилья");
+		residentCapacityItem.addActionListener(e -> showTotalResidentCapacityDialogs());
+
+		res.add(residentCapacityItem);
+
 		return res;
 	}
 
 	private JPanel createMainPanel() {
-		JPanel res = new JPanel();
+		tableModel = new DefaultTableModel() {
+			@Override
+			public boolean isCellEditable(int row, int column) {
+				return false;
+			}
+		};
 
-		return res;
+		resultTable = new JTable(tableModel);
+
+		resultTable.getTableHeader().setBackground(headerColor);
+		resultTable.getTableHeader().setForeground(fontColor);
+		resultTable.getTableHeader().setReorderingAllowed(false);
+		resultTable.getTableHeader().setResizingAllowed(false);
+		resultTable.getTableHeader().setFont(tableFont);
+
+		resultTable.setBackground(tableColor);
+		resultTable.setForeground(fontColor);
+		resultTable.setFont(tableFont);
+		resultTable.setRowHeight(DEFAULT_TEXT_SIZE + 4);
+
+		JScrollPane resultScroll = new JScrollPane(resultTable,
+					JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
+					JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+
+
+		resultScroll.getVerticalScrollBar().setUI(new CustomScrollBarUI("src/main/resources/", hoveredColor, menuColor));
+		resultScroll.getHorizontalScrollBar().setUI(new CustomScrollBarUI("src/main/resources/", hoveredColor, menuColor));
+
+		JPanel resultArea = new JPanel(new BorderLayout());
+		resultArea.add(resultScroll, BorderLayout.CENTER);
+
+		return resultArea;
 	}
 
 	private void showConnectionDialogs() {
@@ -273,7 +323,7 @@ public class GraphicInterface extends JFrame {
 		if (!isConnected) {
 			showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
 				"Вы не подключены к базе данных",
-				"database connection");
+				"database disconnection");
 
 			return;
 		}
@@ -304,6 +354,70 @@ public class GraphicInterface extends JFrame {
 		disconnectionDialog.setVisible(true);
 	}
 
+	private void showUserRequestDialogs() {
+		if (!isConnected) {
+			showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+				"Вы не подключены к базе данных",
+				"user request");
+
+			return;
+		}
+
+		JDialog userRequestDialog = new JDialog(this, "W&R:SR - data service: user request", true);
+
+		userRequestDialog.setVisible(true);
+	}
+
+	private void showTotalResidentCapacityDialogs() {
+		if (!isConnected) {
+			showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+				"Вы не подключены к базе данных",
+				"ready request 1");
+
+			return;
+		}
+
+		try {
+			List<String> settlements = dbListener.getAllSettlements();
+			String[] chooseOptions = new String[settlements.size() + 1];
+			chooseOptions[0] = "Вся страна";
+			for (int i = 1; i <= settlements.size(); i++)
+				chooseOptions[i] = settlements.get(i - 1);
+
+			String choice = (String) JOptionPane.showInputDialog(this,
+				"Выберите населённый пункт или всю страну:",
+				"W&R:SR - data service: количества жилья",
+				JOptionPane.QUESTION_MESSAGE,
+				null,
+				chooseOptions,
+				chooseOptions[0]);
+
+			if (choice == null)
+				return;
+
+			Integer settlementId = null;
+			if (!choice.equals("Вся страна")) {
+				settlementId = dbListener.getSettlementId(choice);
+				if (settlementId == null) {
+					showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+						"Город " + choice + " не найден в базе",
+						"query error");
+					
+					return;
+				}
+			}
+
+			int capacity = dbListener.getTotalResidentCapacity(settlementId);
+
+			showSingleNumberResult("Общая жилая вместимость", capacity);
+		}
+		catch (Exception e) {
+			showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+				"Ошибка выполнения запроса 1: " + e.getMessage(),
+				"query error");
+		}
+	}
+
 	private void showCustomOkOptionDialog(int msgType, String message, String headMsg) {
 		JOptionPane customPane = new JOptionPane(
 			message,
@@ -323,6 +437,14 @@ public class GraphicInterface extends JFrame {
 		customDialog.setVisible(true); 
 	}
 
+	private void showSingleNumberResult(String title, Number value) {
+		tableModel.setRowCount(0);
+		tableModel.setColumnCount(0);
+
+		tableModel.addColumn(title);
+		tableModel.addRow(new Object[]{ value });
+	}
+
 
 
 	private void recreateBD(Connection connection, JDialog dialog) {
@@ -331,7 +453,7 @@ public class GraphicInterface extends JFrame {
 			isConnected = true;
 			dialog.dispose();
 		}
-		catch(Exception e) {
+		catch (Exception e) {
 			showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
 				"Возникли проблемы создания базы данных! Проверьте, что к базе данных есть доступ.",
 				"create error");
@@ -344,7 +466,7 @@ public class GraphicInterface extends JFrame {
 			isConnected = true;
 			dialog.dispose();
 		}
-		catch(Exception e) {
+		catch (Exception e) {
 			showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
 				"Возникли проблемы создания базы данных! Проверьте, что к базе данных есть доступ.",
 				"create error");

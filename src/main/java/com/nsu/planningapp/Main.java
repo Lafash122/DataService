@@ -1,6 +1,7 @@
 package com.nsu.planningapp;
 
 import com.nsu.planningapp.graphic.*;
+import com.nsu.planningapp.graphic.UI.*;
 
 import javax.swing.*;
 

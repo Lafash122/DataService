@@ -24,7 +24,7 @@ public class PreliminaryQueryService {
         }
     }
 
-    public Integer getSettlementId(String cityName) throws SQLException {
+    public static Integer getSettlementId(String cityName) throws SQLException {
         String sql = "SELECT id FROM SETTLEMENTS WHERE name = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
