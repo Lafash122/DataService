@@ -49,7 +49,7 @@ public class DataBaseInformant implements DataBaseListener {
 
 	// 2
 	@Override
-	public List<BuildingDto> getBuildingsByType(String blueprintType, String settlementName) throws Exception {
+	public List<BuildingInfoDto> getBuildingsByType(String blueprintType, String settlementName) throws Exception {
 		return queryService.getBuildingsByType(blueprintType, settlementName);
 	}
 
@@ -84,8 +84,10 @@ public class DataBaseInformant implements DataBaseListener {
 	
 
 	// 9
-	//@Override
-	
+	@Override
+	public List<BuildingInfoDto> getBuildingsList(Integer settlementId) throws Exception {
+		return queryService.getBuildingsList(settlementId);
+	}
 
 	// 10
 	//@Override

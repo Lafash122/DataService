@@ -31,7 +31,7 @@ public class QueryService {
     }
 
     // 2
-    public List<BuildingDto> getBuildingsByType(String blueprintType, String settlementName) throws SQLException {
+    public List<BuildingInfoDto> getBuildingsByType(String blueprintType, String settlementName) throws SQLException {
         String sql;
         if (settlementName == null || settlementName.isEmpty()) {
             sql = "SELECT b.id AS id, s.name AS settlement_name, bb.name AS building_name, bb.blueprint_type " +
@@ -58,11 +58,11 @@ public class QueryService {
             }
 
             ResultSet rs = stmt.executeQuery();
-            List<BuildingDto> buildings = new ArrayList<>();
+            List<BuildingInfoDto> buildings = new ArrayList<>();
             while (rs.next()) {
-                BuildingDto dto = new BuildingDto(rs.getInt("id"),
-                        rs.getString("settlement_name"),
+                BuildingInfoDto dto = new BuildingInfoDto(rs.getInt("id"),
                         rs.getString("building_name"),
+                        rs.getString("settlement_name"),
                         rs.getString("blueprint_type"));
                 buildings.add(dto);
             }

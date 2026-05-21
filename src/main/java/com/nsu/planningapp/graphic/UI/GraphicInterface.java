@@ -196,6 +196,9 @@ public class GraphicInterface extends JFrame {
 
 		
 
+		JMenuItem buildingsListItem = createMenuItem("9.\tСписок зданий");
+		buildingsListItem.addActionListener(e -> showBuildingsListDialogs());
+
 		JMenuItem daysToFillItem = createMenuItem("10.\tВремя заполнения хранилищ");
 		daysToFillItem.addActionListener(e -> showDaysToFillStorageDialogs());
 
@@ -211,6 +214,7 @@ public class GraphicInterface extends JFrame {
 		
 		res.add(resourceStorageItem);
 		
+		res.add(buildingsListItem);
 		res.add(daysToFillItem);
 		
 		res.add(maxStorageNonStorageItem);
@@ -460,7 +464,7 @@ public class GraphicInterface extends JFrame {
 					if (selectedSettlement.equals("Вся страна"))
 						selectedSettlement = null;
 
-					List<BuildingDto> buildings = dbListener.getBuildingsByType(selectedType, selectedSettlement);
+					List<BuildingInfoDto> buildings = dbListener.getBuildingsByType(selectedType, selectedSettlement);
 					if (buildings.isEmpty()) {
 						showBuildingDtoList(new ArrayList<>());
 
@@ -487,41 +491,105 @@ public class GraphicInterface extends JFrame {
 	}
 
 	private void showResourceProductionDialogs() {
-		showResourceSettlementsQueryDialogs("Максимальное производство ресурса", "ready request 3",
+		showResourceSettlementsQueryDialogs("Максимальное производство ресурса", 3,
 			(resId, setlId) -> dbListener.getMaxResourceProduction(resId, setlId));
 	}
 
 	private void showResourceConsumptionDialogs() {
-		showResourceSettlementsQueryDialogs("Максимальное потребление ресурса", "ready request 4",
+		showResourceSettlementsQueryDialogs("Максимальное потребление ресурса", 4,
 			(resId, setlId) -> dbListener.getMaxResourceConsumption(resId, setlId));
 	}
 
 	
 
 	private void showTotalResourceStorageDialogs() {
-		showResourceSettlementsQueryDialogs("Максимальное хранение в хранилище", "ready request 6",
+		showResourceSettlementsQueryDialogs("Максимальное хранение в хранилище", 6,
 			(resId, setlId) -> dbListener.getTotalResourceStorage(resId, setlId));
 	}
 
 	
 
+	private void showBuildingsListDialogs() {
+		if (!isConnected) {
+			showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+				"Вы не подключены к базе данных",
+				"ready request 9");
+
+			return;
+		}
+
+		try {
+			List<String> settlements = dbListener.getAllSettlements();
+			String[] settlementOptions = new String[settlements.size() + 1];
+			settlementOptions[0] = "Вся страна";
+			for (int i = 1; i <= settlements.size(); i++)
+				settlementOptions[i] = settlements.get(i - 1);
+
+			JComboBox<String> settlementCombo = createCustomComboBox(settlementOptions);
+
+			JPanel panel = createCustomPanel(new GridLayout(2, 2, 10, 10));
+			panel.add(createTextLabel("Населенный пункт:"));
+			panel.add(settlementCombo);
+
+			showCustomOkCancelOptionDialog(panel, "перечень всех зданий", () -> {
+				try {
+					String selectedSettlement = (String) settlementCombo.getSelectedItem();
+					if (selectedSettlement == null)
+						return;
+
+					Integer settlementId = null;
+					if (!selectedSettlement.equals("Вся страна")) {
+						settlementId = dbListener.getSettlementId(selectedSettlement);
+						if (settlementId == null) {
+							showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+								"Город не найден", "ошибка");
+
+							return;
+						}
+					}
+
+					List<BuildingInfoDto> buildings = dbListener.getBuildingsList(settlementId);
+					if (buildings.isEmpty()) {
+						showBuildingDtoList(new ArrayList<>());
+
+ 						showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+							"Нет зданий " + (selectedSettlement == null ? " по всей стране" : " в городе "
+							+ selectedSettlement), "ready request 9");
+					}
+					else
+						showBuildingDtoList(buildings);
+				}
+				catch (Exception ex) {
+					showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+						"Ошибка выполнения запроса 9: " + ex.getMessage(),
+						"query error");
+				}
+			});
+		}
+		catch (Exception e) {
+			showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+				"Ошибка выполнения запроса 9: " + e.getMessage(),
+				"query error");
+		}
+	}
+
 	private void showDaysToFillStorageDialogs() {
-		showResourceSettlementsQueryDialogs("Время заполнения хранилищ", "ready request 10",
+		showResourceSettlementsQueryDialogs("Время заполнения хранилищ", 10,
 			(resId, setlId) -> dbListener.getDaysToFillStorage(resId, setlId));
 	}
 
 	
 
 	private void showMaxStorageInNonStorageDialogs() {
-		showResourceSettlementsQueryDialogs("Макс. хранилище в не-хранилищах", "ready request 12",
+		showResourceSettlementsQueryDialogs("Макс. хранилище в не-хранилищах", 12,
 			(resId, setlId) -> dbListener.getMaxStorageInNonStorageBuildings(resId, setlId));
 	}
 
-	private void showResourceSettlementsQueryDialogs(String title, String headMsg, ResourceQuery query) {
+	private void showResourceSettlementsQueryDialogs(String title, int qNumber, ResourceQuery query) {
 		if (!isConnected) {
 			showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
 				"Вы не подключены к базе данных",
-				headMsg);
+				"ready request " + qNumber);
 
 			return;
 		}
@@ -583,7 +651,7 @@ public class GraphicInterface extends JFrame {
 				}
 				catch (Exception ex) {
 					showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
-						"Ошибка выполнения запроса 3: " + ex.getMessage(),
+						"Ошибка выполнения запроса " + qNumber + ": " + ex.getMessage(),
 						"query error");
 				}
 			});
@@ -723,19 +791,19 @@ public class GraphicInterface extends JFrame {
 		tableModel.addRow(new Object[]{ value });
 	}
 
-	private void showBuildingDtoList(List<BuildingDto> buildings) {
+	private void showBuildingDtoList(List<BuildingInfoDto> buildings) {
 		clearTable();
 
 		tableModel.addColumn("ID");
-		tableModel.addColumn("Населенный пункт");
 		tableModel.addColumn("Здание");
+		tableModel.addColumn("Населенный пункт");
 		tableModel.addColumn("Тип здания");
 
-		for (BuildingDto b : buildings)
+		for (BuildingInfoDto b : buildings)
 			tableModel.addRow(new Object[]{
 				b.id(),
-				b.settlementName(),
 				b.blueprintName(),
+				b.settlementName(),
 				b.blueprintType()
 			});
 	}
