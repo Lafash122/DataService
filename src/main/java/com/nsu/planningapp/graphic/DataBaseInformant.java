@@ -59,6 +59,50 @@ public class DataBaseInformant implements DataBaseListener {
 		return queryService.getMaxResourceProduction(resourceId, settlementId);
 	}
 
+	// 4
+	@Override
+	public int getMaxResourceConsumption(Integer resourceId, Integer cityId) throws Exception {
+		return queryService.getMaxResourceConsumption(resourceId, cityId);
+	}
+
+	// 5
+	//@Override
+	
+
+	// 6
+	@Override
+	public double getTotalResourceStorage(Integer resourceId, Integer settlementId) throws Exception {
+		return queryService.getTotalResourceStorage(resourceId, settlementId);
+	}
+
+	// 7
+	//@Override
+	
+
+	// 8
+	//@Override
+	
+
+	// 9
+	//@Override
+	
+
+	// 10
+	//@Override
+	public double getDaysToFillStorage(Integer resourceId, Integer settlementId) throws Exception {
+		return queryService.getDaysToFillStorage(resourceId, settlementId);
+	}
+
+	// 11
+	//@Override
+	
+
+	// 12
+	//@Override
+	public double getMaxStorageInNonStorageBuildings(Integer resourceId, Integer settlementId) throws Exception {
+		return queryService.getMaxStorageInNonStorageBuildings(resourceId, settlementId);
+	}
+
 
 	@Override
 	public List<String> getAllSettlements() throws Exception {

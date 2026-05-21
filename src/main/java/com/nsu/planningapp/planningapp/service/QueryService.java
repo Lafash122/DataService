@@ -73,8 +73,7 @@ public class QueryService {
     // 3
     public int getMaxResourceProduction(Integer resourceId, Integer cityId) throws SQLException {
         String sql = "SELECT COALESCE(SUM(rp.quantity), 0) FROM AMOUNT_OF_RESOURCES_PRODUCED rp " +
-                    "JOIN BUILDINGS b ON b.blueprint = rp.factory_blueprint_id " +
-                    "WHERE rp.resource_id = ?";
+                    "JOIN BUILDINGS b ON b.blueprint = rp.factory_blueprint_id WHERE rp.resource_id = ?";
         if (cityId != null)
             sql += " AND b.settlement = ?";
 
@@ -82,62 +81,27 @@ public class QueryService {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, resourceId);
-            if (cityId != null) {
+            if (cityId != null)
                 stmt.setInt(2, cityId);
-            }
 
             ResultSet rs = stmt.executeQuery();
             return rs.next() ? rs.getInt(1) : 0;
         }
     }
-/*
-    public int getMaxResourceProduction(String resourceName, Integer cityId) throws SQLException {
-        String sql;
-        if (cityId == null) {
-            sql = "SELECT COALESCE(SUM(rp.quantity), 0) FROM AMOUNT_OF_RESOURCES_PRODUCED rp " +
-                    "JOIN RESOURCES r ON rp.resource_id = r.id " +
-                    "WHERE r.name = ?";
-        } else {
-            sql = "SELECT COALESCE(SUM(rp.quantity), 0) FROM AMOUNT_OF_RESOURCES_PRODUCED rp " +
-                    "JOIN BUILDINGS b ON b.blueprint = rp.factory_blueprint_id " +
-                    "JOIN RESOURCES r ON rp.resource_id = r.id " +
-                    "WHERE r.name = ? AND b.settlement = ?";
-        }
 
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, resourceName);
-            if (cityId != null) {
-                stmt.setInt(2, cityId);
-            }
-
-            ResultSet rs = stmt.executeQuery();
-            return rs.next() ? rs.getInt(1) : 0;
-        }
-    }
-*/
     // 4
-    public int getMaxResourceConsumption(String resourceName, Integer settlementId) throws SQLException {
-        String sql;
-        if (settlementId == null) {
-            sql = "SELECT COALESCE(SUM(rc.quantity), 0) FROM AMOUNT_OF_RESOURCES_CONSUMED rc " +
-                    "JOIN RESOURCES r ON rc.resource_id = r.id " +
-                    "WHERE r.name = ?";
-        } else {
-            sql = "SELECT COALESCE(SUM(rc.quantity), 0) FROM AMOUNT_OF_RESOURCES_CONSUMED rc " +
-                    "JOIN BUILDINGS b ON b.blueprint = rc.factory_blueprint_id " +
-                    "JOIN RESOURCES r ON rc.resource_id = r.id " +
-                    "WHERE r.name = ? AND b.settlement = ?";
-        }
+    public int getMaxResourceConsumption(Integer resourceId, Integer cityId) throws SQLException {
+        String sql = "SELECT COALESCE(SUM(rc.quantity), 0) FROM AMOUNT_OF_RESOURCES_CONSUMED rc " +
+                    "JOIN BUILDINGS b ON b.blueprint = rc.factory_blueprint_id WHERE rc.resource_id = ?";
+        if (cityId != null)
+            sql += " AND b.settlement = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, resourceName);
-            if (settlementId != null) {
-                stmt.setInt(2, settlementId);
-            }
+            stmt.setInt(1, resourceId);
+            if (cityId != null)
+                stmt.setInt(2, cityId);
 
             ResultSet rs = stmt.executeQuery();
             return rs.next() ? rs.getInt(1) : 0;
@@ -213,30 +177,20 @@ public class QueryService {
     }
 
     // 6
-    public double getTotalResourceStorage(String resourceName, Integer settlementId) throws SQLException {
-        String sql;
-        if (settlementId == null) {
-            sql = "SELECT COALESCE(SUM(ss.quantity), 0) AS total_storage " +
-                  "FROM RESOURCE_STORAGE_SIZES ss " +
-                  "JOIN RESOURCES r ON ss.resource_id = r.id " +
-                  "WHERE r.name = ?";
-        }
-        else {
-            sql = "SELECT COALESCE(SUM(ss.quantity), 0) AS total_storage " +
-                  "FROM RESOURCE_STORAGE_SIZES ss " +
-                  "JOIN RESOURCES r ON ss.resource_id = r.id " +
-                  "JOIN BUILDINGS b ON ss.building_blueprint_id = b.blueprint " +
-                  "WHERE r.name = ? AND b.settlement = ?";
-        }
+    public double getTotalResourceStorage(Integer resourceId, Integer settlementId) throws SQLException {
+        String sql = "SELECT COALESCE(SUM(ss.quantity), 0) AS total_storage FROM RESOURCE_STORAGE_SIZES ss " +
+                        "JOIN BUILDINGS b ON b.blueprint = ss.building_blueprint_id WHERE ss.resource_id = ?";
+        if (settlementId != null)
+            sql += " AND b.settlement = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, resourceName);
+            stmt.setInt(1, resourceId);
             if (settlementId != null)
                  stmt.setInt(2, settlementId);
-            ResultSet rs = stmt.executeQuery();
 
+            ResultSet rs = stmt.executeQuery();
             return rs.next() ? rs.getDouble("total_storage") : 0.0;
         }
     }
@@ -377,49 +331,38 @@ public class QueryService {
     }
 
     // 10
-    public double getDaysToFillStorage(String resourceName, Integer settlementId) throws SQLException {
-        String sql;
-        if (settlementId == null) {
-            // По всей стране
-            sql = "SELECT " +
-                    "   (SELECT COALESCE(SUM(ss.quantity), 0) FROM RESOURCE_STORAGE_SIZES ss " +
-                    "    JOIN RESOURCES r ON ss.resource_id = r.id WHERE r.name = ?) / " +
-                    "   NULLIF((SELECT COALESCE(SUM(arp.quantity), 0) FROM AMOUNT_OF_RESOURCES_PRODUCED arp " +
-                    "          JOIN RESOURCES r ON arp.resource_id = r.id WHERE r.name = ?), 0) " +
-                    "AS days_to_fill";
-        } else {
-            // В конкретном городе
-            sql = "SELECT " +
-                    "   (SELECT COALESCE(SUM(ss.quantity), 0) FROM RESOURCE_STORAGE_SIZES ss " +
-                    "    JOIN RESOURCES r ON ss.resource_id = r.id " +
-                    "    JOIN BUILDINGS b ON ss.building_blueprint_id = b.blueprint " +
-                    "    WHERE r.name = ? AND b.settlement = ?) / " +
-                    "   NULLIF((SELECT COALESCE(SUM(arp.quantity), 0) FROM AMOUNT_OF_RESOURCES_PRODUCED arp " +
-                    "          JOIN RESOURCES r ON arp.resource_id = r.id " +
-                    "          JOIN FACTORY_BLUEPRINTS fb ON arp.factory_blueprint_id = fb.id " +
-                    "          JOIN BUILDINGS b ON fb.id = b.blueprint " +
-                    "          WHERE r.name = ? AND b.settlement = ?), 0) " +
-                    "AS days_to_fill";
-        }
+    public double getDaysToFillStorage(Integer resourceId, Integer settlementId) throws SQLException {
+        String storageSubquery = "SELECT COALESCE(SUM(ss.quantity), 0) FROM RESOURCE_STORAGE_SIZES ss " +
+                                    "JOIN BUILDINGS b ON b.blueprint = ss.building_blueprint_id " +
+                                    "WHERE ss.resource_id = ?";;
+        if (settlementId != null)
+            storageSubquery += " AND b.settlement = ?";
+
+        String productionSubquery = "SELECT COALESCE(SUM(arp.quantity), 0) FROM AMOUNT_OF_RESOURCES_PRODUCED arp " +
+                                    "JOIN BUILDINGS b ON b.blueprint = arp.factory_blueprint_id " +
+                                    "WHERE arp.resource_id = ?";
+        if (settlementId != null)
+            productionSubquery += " AND b.settlement = ?";
+
+        String sql = "SELECT (" + storageSubquery + ") / NULLIF((" + productionSubquery + "), 0) AS days_to_fill";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, resourceName);
-            if (settlementId == null) {
-                stmt.setString(2, resourceName);
-            } else {
+            stmt.setInt(1, resourceId);
+            if (settlementId == null)
+                stmt.setInt(2, resourceId);
+            else {
                 stmt.setInt(2, settlementId);
-                stmt.setString(3, resourceName);
+                stmt.setInt(3, resourceId);
                 stmt.setInt(4, settlementId);
             }
 
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 double days = rs.getDouble("days_to_fill");
-            // Если в БД значение NULL (производство = 0), возвращаем бесконечность
-                if (rs.wasNull()) {
+                if (rs.wasNull())
                     return Double.POSITIVE_INFINITY;
-                }
+
                 return days;
             }
             return Double.POSITIVE_INFINITY;
@@ -462,20 +405,22 @@ public class QueryService {
     }
 
     // 12
-    public double getMaxStorageInNonStorageBuildings(String resourceName) throws SQLException {
-        String sql = "SELECT MAX(ss.quantity) AS max_storage " +
-                 "FROM RESOURCE_STORAGE_SIZES ss " +
-                 "JOIN RESOURCES r ON ss.resource_id = r.id " +
-                 "JOIN BUILDING_BLUEPRINTS bb ON ss.building_blueprint_id = bb.id " +
-                 "WHERE r.name = ? " +
-                 "  AND bb.blueprint_type != 'хранилище'";
+    public double getMaxStorageInNonStorageBuildings(Integer resourceId, Integer settlementId) throws SQLException {
+        String sql = "SELECT COALESCE(MAX(ss.quantity), 0) AS max_storage FROM RESOURCE_STORAGE_SIZES ss " +
+                        "JOIN BUILDINGS b ON b.blueprint = ss.building_blueprint_id " +
+                        "JOIN BUILDING_BLUEPRINTS bb ON ss.building_blueprint_id = bb.id " +
+                        "WHERE ss.resource_id = ? AND bb.blueprint_type != 'хранилище'";
+        if (settlementId != null)
+            sql += " AND b.settlement = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, resourceName);
-            ResultSet rs = stmt.executeQuery();
+            stmt.setInt(1, resourceId);
+            if (settlementId != null)
+                stmt.setInt(2, settlementId);
 
+            ResultSet rs = stmt.executeQuery();
             return rs.next() ? rs.getDouble("max_storage") : 0.0;
         }
     }

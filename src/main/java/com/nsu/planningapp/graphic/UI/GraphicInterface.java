@@ -186,11 +186,34 @@ public class GraphicInterface extends JFrame {
 		JMenuItem resourceProductionItem = createMenuItem("3.\tМаксимальное производство");
 		resourceProductionItem.addActionListener(e -> showResourceProductionDialogs());
 
+		JMenuItem resourceConsumptionItem = createMenuItem("4.\tМаксимальное потребление");
+		resourceConsumptionItem.addActionListener(e -> showResourceConsumptionDialogs());
+
 		
+
+		JMenuItem resourceStorageItem = createMenuItem("6.\tМаксимальное хранение в хранилище");
+		resourceStorageItem.addActionListener(e -> showTotalResourceStorageDialogs());
+
+		
+
+		JMenuItem daysToFillItem = createMenuItem("10.\tВремя заполнения хранилищ");
+		daysToFillItem.addActionListener(e -> showDaysToFillStorageDialogs());
+
+		
+
+		JMenuItem maxStorageNonStorageItem = createMenuItem("12.\tОбъём хранения не хранилищ");
+		maxStorageNonStorageItem.addActionListener(e -> showMaxStorageInNonStorageDialogs());
 
 		res.add(residentCapacityItem);
 		res.add(buildingsByTypeItem);
 		res.add(resourceProductionItem);
+		res.add(resourceConsumptionItem);
+		
+		res.add(resourceStorageItem);
+		
+		res.add(daysToFillItem);
+		
+		res.add(maxStorageNonStorageItem);
 
 		return res;
 	}
@@ -464,10 +487,41 @@ public class GraphicInterface extends JFrame {
 	}
 
 	private void showResourceProductionDialogs() {
+		showResourceSettlementsQueryDialogs("Максимальное производство ресурса", "ready request 3",
+			(resId, setlId) -> dbListener.getMaxResourceProduction(resId, setlId));
+	}
+
+	private void showResourceConsumptionDialogs() {
+		showResourceSettlementsQueryDialogs("Максимальное потребление ресурса", "ready request 4",
+			(resId, setlId) -> dbListener.getMaxResourceConsumption(resId, setlId));
+	}
+
+	
+
+	private void showTotalResourceStorageDialogs() {
+		showResourceSettlementsQueryDialogs("Максимальное хранение в хранилище", "ready request 6",
+			(resId, setlId) -> dbListener.getTotalResourceStorage(resId, setlId));
+	}
+
+	
+
+	private void showDaysToFillStorageDialogs() {
+		showResourceSettlementsQueryDialogs("Время заполнения хранилищ", "ready request 10",
+			(resId, setlId) -> dbListener.getDaysToFillStorage(resId, setlId));
+	}
+
+	
+
+	private void showMaxStorageInNonStorageDialogs() {
+		showResourceSettlementsQueryDialogs("Макс. хранилище в не-хранилищах", "ready request 12",
+			(resId, setlId) -> dbListener.getMaxStorageInNonStorageBuildings(resId, setlId));
+	}
+
+	private void showResourceSettlementsQueryDialogs(String title, String headMsg, ResourceQuery query) {
 		if (!isConnected) {
 			showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
 				"Вы не подключены к базе данных",
-				"ready request 3");
+				headMsg);
 
 			return;
 		}
@@ -496,7 +550,7 @@ public class GraphicInterface extends JFrame {
 			panel.add(createTextLabel("Населенный пункт:"));
 			panel.add(settlementCombo);
 
-			showCustomOkCancelOptionDialog(panel, "перечень зданий по типу", () -> {
+			showCustomOkCancelOptionDialog(panel, title, () -> {
 				try {
 					String selectedResource = (String) resourcesCombo.getSelectedItem();
 					String selectedSettlement = (String) settlementCombo.getSelectedItem();
@@ -524,9 +578,8 @@ public class GraphicInterface extends JFrame {
 						}
 					}
 
-					int production = dbListener.getMaxResourceProduction(resourceId, settlementId);
-					showSingleNumberResult("Максимальное производство ресурса \""
-								+ selectedResource + "\"", production);
+					Number result = query.execute(resourceId, settlementId);
+					showSingleNumberResult(title, result);
 				}
 				catch (Exception ex) {
 					showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
@@ -688,6 +741,11 @@ public class GraphicInterface extends JFrame {
 	}
 
 
+
+	@FunctionalInterface
+	private interface ResourceQuery {
+		Number execute(Integer resourceId, Integer settlementId) throws Exception;
+	}
 
 	private void recreateBD(Connection connection, JDialog dialog) {
 		try {
