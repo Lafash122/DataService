@@ -33,7 +33,7 @@ public interface DataBaseListener {
 	// 10
 	public double getDaysToFillStorage(Integer resourceId, Integer settlementId) throws Exception;
 	// 11
-	
+	public int getTotalParkingSpaces(Integer settlementId, List<Integer> buildingIds) throws Exception;
 	// 12
 	public double getMaxStorageInNonStorageBuildings(Integer resourceId, Integer settlementId) throws Exception;
 
@@ -46,4 +46,5 @@ public interface DataBaseListener {
 	public Integer getBuildingBlueprintId(String name) throws Exception;
 	public List<String> getAllTransportBlueprintNames() throws Exception;
 	public Integer getTransportBlueprintId(String name) throws Exception;
+	public List<BuildingInfoDto> getBuildingsWithParking() throws Exception;
 }

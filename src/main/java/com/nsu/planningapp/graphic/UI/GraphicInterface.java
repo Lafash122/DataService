@@ -11,7 +11,9 @@ import java.awt.*;
 import java.sql.Connection;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.function.Function;
+import java.util.Map;
+import java.util.LinkedHashMap;
+
 
 public class GraphicInterface extends JFrame {
 	private boolean isConnected = false;
@@ -207,7 +209,8 @@ public class GraphicInterface extends JFrame {
 		JMenuItem daysToFillItem = createMenuItem("10.\tВремя заполнения хранилищ");
 		daysToFillItem.addActionListener(e -> showDaysToFillStorageDialogs());
 
-		
+		JMenuItem parkingSpacesItem = createMenuItem("11.\tЧисло служебных стояночных мест");
+		parkingSpacesItem.addActionListener(e -> showTotalParkingSpacesDialogs());
 
 		JMenuItem maxStorageNonStorageItem = createMenuItem("12.\tОбъём хранения не хранилищ");
 		maxStorageNonStorageItem.addActionListener(e -> showMaxStorageInNonStorageDialogs());
@@ -222,7 +225,7 @@ public class GraphicInterface extends JFrame {
 		res.add(transportCostItem);
 		res.add(buildingsListItem);
 		res.add(daysToFillItem);
-		
+		res.add(parkingSpacesItem);
 		res.add(maxStorageNonStorageItem);
 
 		return res;
@@ -404,6 +407,7 @@ public class GraphicInterface extends JFrame {
 					if (!selectedSettlement.equals("Вся страна")) {
 						settlementId = dbListener.getSettlementId(selectedSettlement);
 						if (settlementId == null) {
+							showSingleNumberResult("Общая жилая вместимость", null);
 							showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
 								"Город " + selectedSettlement + " не найден в базе",
 								"query error");
@@ -624,7 +628,7 @@ public class GraphicInterface extends JFrame {
 						settlementId = dbListener.getSettlementId(selectedSettlement);
 						if (settlementId == null) {
 							showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
-								"Город не найден", "ошибка");
+								"Город не найден", "query error");
 
 							return;
 						}
@@ -660,7 +664,49 @@ public class GraphicInterface extends JFrame {
 			(resId, setlId) -> dbListener.getDaysToFillStorage(resId, setlId));
 	}
 
-	
+	private void showTotalParkingSpacesDialogs() {
+		if (!isConnected) {
+			showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+				"Нет подключения к базе данных", "ready request 11");
+
+			return;
+		}
+
+		try {
+			List<BuildingInfoDto> allBuildings = dbListener.getBuildingsWithParking();
+			if (allBuildings.isEmpty()) {
+				showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+					"Нет построенных зданий", "query error");
+
+				return;
+			}
+
+			Map<String, Integer> nameToId = new LinkedHashMap<>();
+			List<String> displayNames = new ArrayList<>();
+			for (BuildingInfoDto b : allBuildings) {
+				String display = b.blueprintName() + " (" + b.settlementName() + ")";
+				displayNames.add(display);
+				nameToId.put(display, b.id());
+			}
+
+			List<Integer> selectedIds = showCheckBoxDialog("Парковочные места", displayNames, nameToId::get);
+
+			if (selectedIds == null || selectedIds.isEmpty()) {
+				showSingleNumberResult("Общее количество парковочных мест", null);
+				showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+					"Ни одно здание не выбрано", "ready request 11");
+
+				return;
+			}
+
+			int parking = dbListener.getTotalParkingSpaces(null, selectedIds);
+			showSingleNumberResult("Общее служебных парковочных мест", parking);
+		}
+		catch (Exception e) {
+			showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+				"Ошибка выполнения запроса 11: " + e.getMessage(), "query error");
+		}
+	}
 
 	private void showMaxStorageInNonStorageDialogs() {
 		showResourceSettlementsQueryDialogs("Макс. хранилище в не-хранилищах", 12,
@@ -954,6 +1000,10 @@ public class GraphicInterface extends JFrame {
 		clearTable();
 
 		tableModel.addColumn(title);
+
+		if (value == null)
+			return;
+
 		tableModel.addRow(new Object[]{ value });
 	}
 

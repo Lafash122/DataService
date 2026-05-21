@@ -103,8 +103,10 @@ public class DataBaseInformant implements DataBaseListener {
 	}
 
 	// 11
-	//@Override
-	
+	@Override
+	public int getTotalParkingSpaces(Integer settlementId, List<Integer> buildingIds) throws Exception {
+		return queryService.getTotalParkingSpaces(settlementId, buildingIds);
+	}
 
 	// 12
 	//@Override
@@ -156,5 +158,10 @@ public class DataBaseInformant implements DataBaseListener {
 	@Override
 	public Integer getTransportBlueprintId(String name) throws Exception {
 		return PreliminaryQueryService.getTransportBlueprintId(name);
+	}
+
+	@Override
+	public List<BuildingInfoDto> getBuildingsWithParking() throws Exception {
+		return PreliminaryQueryService.getBuildingsWithParking();
 	}
 }

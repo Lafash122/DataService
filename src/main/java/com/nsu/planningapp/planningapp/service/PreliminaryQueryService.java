@@ -1,6 +1,7 @@
 package com.nsu.planningapp.planningapp.service;
 
 import com.nsu.planningapp.planningapp.infrastructure.db.DatabaseConnection;
+import com.nsu.planningapp.planningapp.dto.BuildingInfoDto;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -185,6 +186,28 @@ public class PreliminaryQueryService {
             stmt.setString(1, buildingName);
             ResultSet rs = stmt.executeQuery();
             return rs.next() ? rs.getInt("id") : null;
+        }
+    }
+
+    public static List<BuildingInfoDto> getBuildingsWithParking() throws SQLException {
+        String sql = "SELECT DISTINCT b.id, bb.name AS blueprint_name, s.name AS settlement_name, bb.blueprint_type " +
+                        "FROM BUILDINGS b JOIN BUILDING_BLUEPRINTS bb ON b.blueprint = bb.id " +
+                        "JOIN SETTLEMENTS s ON b.settlement = s.id " +
+                        "JOIN PUBLIC_FACILITY_BLUEPRINTS pf ON bb.id = pf.id " +
+                        "WHERE pf.number_of_parking_spaces > 0 ORDER BY s.name, bb.name";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            List<BuildingInfoDto> list = new ArrayList<>();
+            while (rs.next())
+                list.add(new BuildingInfoDto(
+                    rs.getInt("id"),
+                    rs.getString("blueprint_name"),
+                    rs.getString("settlement_name"),
+                    rs.getString("blueprint_type")
+                ));
+
+            return list;
         }
     }
 
