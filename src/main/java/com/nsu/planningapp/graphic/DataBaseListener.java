@@ -25,9 +25,9 @@ public interface DataBaseListener {
 	// 6
 	public double getTotalResourceStorage(Integer resourceId, Integer settlementId) throws Exception;
 	// 7
-	
+	public ConstructionDetailsDto getBuildingConstructionCost(List<Integer> bBlueprintIds) throws Exception;
 	// 8
-	
+	public ConstructionDetailsDto getTransportConstructionCost(List<Integer> tBlueprintIds) throws Exception;
 	// 9
 	public List<BuildingInfoDto> getBuildingsList(Integer settlementId) throws Exception;
 	// 10
@@ -42,4 +42,8 @@ public interface DataBaseListener {
 	public List<String> getAllBlueprintTypes() throws Exception;
 	public List<String> getAllResourcesNames() throws Exception;
 	public Integer getResourceId(String resourceName) throws Exception;
+	public List<String> getAllBuildingBlueprintNames() throws Exception;
+	public Integer getBuildingBlueprintId(String name) throws Exception;
+	public List<String> getAllTransportBlueprintNames() throws Exception;
+	public Integer getTransportBlueprintId(String name) throws Exception;
 }

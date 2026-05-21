@@ -11,6 +11,7 @@ import java.awt.*;
 import java.sql.Connection;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.function.Function;
 
 public class GraphicInterface extends JFrame {
 	private boolean isConnected = false;
@@ -194,7 +195,11 @@ public class GraphicInterface extends JFrame {
 		JMenuItem resourceStorageItem = createMenuItem("6.\tМаксимальное хранение в хранилище");
 		resourceStorageItem.addActionListener(e -> showTotalResourceStorageDialogs());
 
-		
+		JMenuItem buildingCostItem = createMenuItem("7.\tСтроительство зданий");
+		buildingCostItem.addActionListener(e -> showBuildingConstructionCostDialogs());
+
+		JMenuItem transportCostItem = createMenuItem("8.\tСборка транспорта");
+		transportCostItem.addActionListener(e -> showTransportConstructionCostDialogs());
 
 		JMenuItem buildingsListItem = createMenuItem("9.\tСписок зданий");
 		buildingsListItem.addActionListener(e -> showBuildingsListDialogs());
@@ -213,7 +218,8 @@ public class GraphicInterface extends JFrame {
 		res.add(resourceConsumptionItem);
 		
 		res.add(resourceStorageItem);
-		
+		res.add(buildingCostItem);
+		res.add(transportCostItem);
 		res.add(buildingsListItem);
 		res.add(daysToFillItem);
 		
@@ -507,7 +513,83 @@ public class GraphicInterface extends JFrame {
 			(resId, setlId) -> dbListener.getTotalResourceStorage(resId, setlId));
 	}
 
-	
+	private void showBuildingConstructionCostDialogs() {
+		if (!isConnected) {
+			showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+				"Нет подключения к базе данных", "ready request 7");
+
+			return;
+		}
+		try {
+			List<String> blueprints = dbListener.getAllBuildingBlueprintNames();
+			if (blueprints.isEmpty()) {
+				showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+					"Нет чертежей зданий", "query error");
+
+				return;
+			}
+
+			List<Integer> blueprintIds = showCheckBoxDialog(
+				"Строительство зданий",
+				blueprints,
+				name -> dbListener.getBuildingBlueprintId(name)
+			);
+			if (blueprintIds == null || blueprintIds.isEmpty()) {
+				showConstructionDetails(null);
+				showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+					"Ни одно здание не выбрано",
+					"ready request 7");
+
+				return;
+			}
+
+			ConstructionDetailsDto details = dbListener.getBuildingConstructionCost(blueprintIds);
+			showConstructionDetails(details);
+		}
+		catch (Exception e) {
+			showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+				"Ошибка выполнения запроса 7: " + e.getMessage(), "query error");
+		}
+	}
+
+	private void showTransportConstructionCostDialogs() {
+		if (!isConnected) {
+			showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+				"Нет подключения к базе данных", "ready request 8");
+
+			return;
+		}
+		try {
+			List<String> blueprints = dbListener.getAllTransportBlueprintNames();
+			if (blueprints.isEmpty()) {
+				showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+					"Нет чертежей транспорта", "query error");
+
+				return;
+			}
+
+			List<Integer> blueprintIds = showCheckBoxDialog(
+				"Сборка транспорта",
+				blueprints,
+				name -> dbListener.getTransportBlueprintId(name)
+			);
+			if (blueprintIds == null || blueprintIds.isEmpty()) {
+				showConstructionDetails(null);
+				showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+					"Ни одно транспортное средство не выбрано",
+					"ready request 8");
+
+				return;
+			}
+
+			ConstructionDetailsDto details = dbListener.getTransportConstructionCost(blueprintIds);
+			showConstructionDetails(details);
+		}
+		catch (Exception e) {
+			showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+				"Ошибка выполнения запроса 8: " + e.getMessage(), "query error");
+		}
+	}
 
 	private void showBuildingsListDialogs() {
 		if (!isConnected) {
@@ -583,6 +665,90 @@ public class GraphicInterface extends JFrame {
 	private void showMaxStorageInNonStorageDialogs() {
 		showResourceSettlementsQueryDialogs("Макс. хранилище в не-хранилищах", 12,
 			(resId, setlId) -> dbListener.getMaxStorageInNonStorageBuildings(resId, setlId));
+	}
+
+	private List<Integer> showCheckBoxDialog(String title, List<String> items, IdResolver idResolver) {
+		JPanel panel = new JPanel(new GridLayout(0, 1));
+		panel.setBackground(menuColor);
+		List<JCheckBox> checkBoxes = new ArrayList<>();
+		for (String item : items) {
+			JCheckBox cb = new JCheckBox(item);
+			cb.setBackground(menuColor);
+			cb.setForeground(fontColor);
+			cb.setFont(defaultTextFont);
+			panel.add(cb);
+			checkBoxes.add(cb);
+		}
+		JScrollPane scroll = new JScrollPane(panel);
+		scroll.setPreferredSize(new Dimension(400, 300));
+
+		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+		buttonPanel.setBackground(menuColor);
+		JButton selectAllButton = createButton("Выбрать все");
+		JButton clearAllButton = createButton("Снять все");
+		buttonPanel.add(selectAllButton);
+		buttonPanel.add(clearAllButton);
+
+		JPanel mainPanel = new JPanel(new BorderLayout());
+		mainPanel.setBackground(menuColor);
+		mainPanel.add(scroll, BorderLayout.CENTER);
+		mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+		JOptionPane optionPane = new JOptionPane(mainPanel,
+			JOptionPane.PLAIN_MESSAGE,
+			JOptionPane.DEFAULT_OPTION,
+			null,
+			new Object[]{}
+		);
+		optionPane.setBackground(menuColor);
+
+		JDialog dialog = optionPane.createDialog(this, "W&R:SR - data service: " + title);
+		dialog.setBackground(menuColor);
+
+		JButton okButton = createButton("Выполнить");
+		JButton cancelButton = createButton("Отмена");
+		optionPane.setOptions(new Object[]{okButton, cancelButton});
+
+		final List<Integer>[] result = new List[]{ null };
+
+		okButton.addActionListener(e -> {
+			List<Integer> selectedIds = new ArrayList<>();
+			for (int i = 0; i < checkBoxes.size(); i++) {
+				if (checkBoxes.get(i).isSelected()) {
+					try {
+						Integer id = idResolver.resolve(items.get(i));
+						if (id != null)
+							selectedIds.add(id);
+					}
+					catch (Exception ex) {
+						showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+							"Ошибка получения ID для " + items.get(i) + ": " + ex.getMessage(),
+								"request error");
+
+						return;
+					}
+				}
+			}
+
+			result[0] = selectedIds;
+			dialog.dispose();
+		});
+
+		cancelButton.addActionListener(e -> {
+			result[0] = null;
+			dialog.dispose();
+		});
+
+		selectAllButton.addActionListener(e -> {
+			for (JCheckBox cb : checkBoxes) cb.setSelected(true);
+		});
+		clearAllButton.addActionListener(e -> {
+			for (JCheckBox cb : checkBoxes) cb.setSelected(false);
+		});
+
+		dialog.pack();
+		dialog.setVisible(true);
+		return result[0];
 	}
 
 	private void showResourceSettlementsQueryDialogs(String title, int qNumber, ResourceQuery query) {
@@ -808,7 +974,26 @@ public class GraphicInterface extends JFrame {
 			});
 	}
 
+	private void showConstructionDetails(ConstructionDetailsDto details) {
+		clearTable();
+		tableModel.addColumn("Ресурс");
+		tableModel.addColumn("Количество");
 
+		if (details == null)
+			return;
+
+		for (ResourceRequirementDto res : details.resources())
+			tableModel.addRow(new Object[]{res.resourceName(), res.totalQuantity()});
+
+		tableModel.addRow(new Object[]{ "Итого трудодней", details.totalWorkdays() });
+	}
+
+
+
+	@FunctionalInterface
+	private interface IdResolver {
+		Integer resolve(String name) throws Exception;
+	}
 
 	@FunctionalInterface
 	private interface ResourceQuery {

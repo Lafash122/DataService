@@ -60,6 +60,19 @@ public class PreliminaryQueryService {
         }
     }
 
+    public static List<String> getAllTransportBlueprintNames() throws SQLException {
+        String sql = "SELECT name FROM TRANSPORT_BLUEPRINTS ORDER BY name";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            List<String> names = new ArrayList<>();
+            while (rs.next())
+                names.add(rs.getString("name"));
+
+            return names;
+        }
+    }
+
     // Resources
 
     public static List<String> getAllResourcesNames() throws SQLException {
@@ -136,6 +149,29 @@ public class PreliminaryQueryService {
                 buildings.add(rs.getString("name"));
             }
             return buildings;
+        }
+    }
+
+    public static List<String> getAllBuildingBlueprintNames() throws SQLException {
+        String sql = "SELECT name FROM BUILDING_BLUEPRINTS ORDER BY name";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            List<String> names = new ArrayList<>();
+            while (rs.next())
+                names.add(rs.getString("name"));
+
+            return names;
+        }
+    }
+
+    public static Integer getBuildingBlueprintId(String name) throws SQLException {
+        String sql = "SELECT id FROM BUILDING_BLUEPRINTS WHERE name = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, name);
+            ResultSet rs = stmt.executeQuery();
+            return rs.next() ? rs.getInt("id") : null;
         }
     }
 

@@ -76,11 +76,18 @@ public class DataBaseInformant implements DataBaseListener {
 	}
 
 	// 7
-	//@Override
+	@Override
+	public ConstructionDetailsDto getBuildingConstructionCost(List<Integer> bBlueprintIds) throws Exception {
+		return queryService.getBuildingConstructionCost(bBlueprintIds);
+	}
 	
 
 	// 8
-	//@Override
+	@Override
+	public ConstructionDetailsDto getTransportConstructionCost(List<Integer> tBlueprintIds) throws Exception {
+		return queryService.getTransportConstructionCost(tBlueprintIds);
+	}
+
 	
 
 	// 9
@@ -129,5 +136,25 @@ public class DataBaseInformant implements DataBaseListener {
 	@Override
 	public Integer getResourceId(String resourceName) throws Exception {
 		return PreliminaryQueryService.getResourceId(resourceName);
+	}
+
+	@Override
+	public List<String> getAllBuildingBlueprintNames() throws Exception {
+		return PreliminaryQueryService.getAllBuildingBlueprintNames();
+	}
+
+	@Override
+	public Integer getBuildingBlueprintId(String name) throws Exception {
+		return PreliminaryQueryService.getBuildingBlueprintId(name);
+	}
+
+	@Override
+	public List<String> getAllTransportBlueprintNames() throws Exception {
+		return PreliminaryQueryService.getAllTransportBlueprintNames();
+	}
+
+	@Override
+	public Integer getTransportBlueprintId(String name) throws Exception {
+		return PreliminaryQueryService.getTransportBlueprintId(name);
 	}
 }
