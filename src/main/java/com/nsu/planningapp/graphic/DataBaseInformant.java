@@ -66,8 +66,10 @@ public class DataBaseInformant implements DataBaseListener {
 	}
 
 	// 5
-	//@Override
-	
+	@Override
+	public JobsReportDto getJobsCount(Integer settlementId, Integer buildingId) throws Exception {
+		return queryService.getJobsCount(settlementId, buildingId);
+	}
 
 	// 6
 	@Override
@@ -80,15 +82,12 @@ public class DataBaseInformant implements DataBaseListener {
 	public ConstructionDetailsDto getBuildingConstructionCost(List<Integer> bBlueprintIds) throws Exception {
 		return queryService.getBuildingConstructionCost(bBlueprintIds);
 	}
-	
 
 	// 8
 	@Override
 	public ConstructionDetailsDto getTransportConstructionCost(List<Integer> tBlueprintIds) throws Exception {
 		return queryService.getTransportConstructionCost(tBlueprintIds);
 	}
-
-	
 
 	// 9
 	@Override
@@ -97,7 +96,7 @@ public class DataBaseInformant implements DataBaseListener {
 	}
 
 	// 10
-	//@Override
+	@Override
 	public double getDaysToFillStorage(Integer resourceId, Integer settlementId) throws Exception {
 		return queryService.getDaysToFillStorage(resourceId, settlementId);
 	}
@@ -109,7 +108,7 @@ public class DataBaseInformant implements DataBaseListener {
 	}
 
 	// 12
-	//@Override
+	@Override
 	public double getMaxStorageInNonStorageBuildings(Integer resourceId, Integer settlementId) throws Exception {
 		return queryService.getMaxStorageInNonStorageBuildings(resourceId, settlementId);
 	}

@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.LinkedHashMap;
 
-
 public class GraphicInterface extends JFrame {
 	private boolean isConnected = false;
 	private int DEFAULT_TEXT_SIZE = 16;
@@ -192,7 +191,8 @@ public class GraphicInterface extends JFrame {
 		JMenuItem resourceConsumptionItem = createMenuItem("4.\tМаксимальное потребление");
 		resourceConsumptionItem.addActionListener(e -> showResourceConsumptionDialogs());
 
-		
+		JMenuItem jobsCountItem = createMenuItem("5.\tРабочие места");
+		jobsCountItem.addActionListener(e -> showJobsCountDialogs());
 
 		JMenuItem resourceStorageItem = createMenuItem("6.\tМаксимальное хранение в хранилище");
 		resourceStorageItem.addActionListener(e -> showTotalResourceStorageDialogs());
@@ -219,7 +219,7 @@ public class GraphicInterface extends JFrame {
 		res.add(buildingsByTypeItem);
 		res.add(resourceProductionItem);
 		res.add(resourceConsumptionItem);
-		
+		res.add(jobsCountItem);
 		res.add(resourceStorageItem);
 		res.add(buildingCostItem);
 		res.add(transportCostItem);
@@ -510,7 +510,51 @@ public class GraphicInterface extends JFrame {
 			(resId, setlId) -> dbListener.getMaxResourceConsumption(resId, setlId));
 	}
 
-	
+	private void showJobsCountDialogs() {
+		if (!isConnected) {
+			showCustomOkOptionDialog(JOptionPane.WARNING_MESSAGE,
+				"Нет подключения к базе данных", "ready request 5");
+
+			return;
+		}
+
+		JPanel typePanel = new JPanel(new GridLayout(2, 1, 10, 10));
+		typePanel.setBackground(menuColor);
+		JButton cityButton = createButton("По населённому пункту");
+		JButton buildingButton = createButton("По конкретному зданию");
+		typePanel.add(cityButton);
+		typePanel.add(buildingButton);
+
+		JOptionPane typePane = new JOptionPane(typePanel, JOptionPane.PLAIN_MESSAGE,
+			JOptionPane.DEFAULT_OPTION, null, new Object[]{});
+		JDialog typeDialog = typePane.createDialog(this, "W&R:SR - data service: выбор масштаба");
+		typeDialog.setBackground(menuColor);
+		typeDialog.getContentPane().setBackground(menuColor);
+
+		final boolean[] choiceMade = { false };
+		cityButton.addActionListener(e -> {
+			choiceMade[0] = true;
+			typeDialog.dispose();
+			showJobsByCity();
+		});
+
+		buildingButton.addActionListener(e -> {
+			choiceMade[0] = true;
+			typeDialog.dispose();
+			showJobsByBuilding();
+		});
+
+		typeDialog.addWindowListener(new java.awt.event.WindowAdapter() {
+			public void windowClosing(java.awt.event.WindowEvent e) {
+				if (!choiceMade[0])
+					typeDialog.dispose();
+			}
+		});
+
+		typeDialog.pack();
+		typeDialog.setLocationRelativeTo(this);
+		typeDialog.setVisible(true);
+	}
 
 	private void showTotalResourceStorageDialogs() {
 		showResourceSettlementsQueryDialogs("Максимальное хранение в хранилище", 6,
@@ -538,7 +582,10 @@ public class GraphicInterface extends JFrame {
 				blueprints,
 				name -> dbListener.getBuildingBlueprintId(name)
 			);
-			if (blueprintIds == null || blueprintIds.isEmpty()) {
+			if (blueprintIds == null)
+				return;
+
+			if (blueprintIds.isEmpty()) {
 				showConstructionDetails(null);
 				showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
 					"Ни одно здание не выбрано",
@@ -577,7 +624,10 @@ public class GraphicInterface extends JFrame {
 				blueprints,
 				name -> dbListener.getTransportBlueprintId(name)
 			);
-			if (blueprintIds == null || blueprintIds.isEmpty()) {
+			if (blueprintIds == null)
+				return;
+
+			if (blueprintIds.isEmpty()) {
 				showConstructionDetails(null);
 				showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
 					"Ни одно транспортное средство не выбрано",
@@ -691,7 +741,10 @@ public class GraphicInterface extends JFrame {
 
 			List<Integer> selectedIds = showCheckBoxDialog("Парковочные места", displayNames, nameToId::get);
 
-			if (selectedIds == null || selectedIds.isEmpty()) {
+			if (selectedIds == null)
+				return;
+
+			if (selectedIds.isEmpty()) {
 				showSingleNumberResult("Общее количество парковочных мест", null);
 				showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
 					"Ни одно здание не выбрано", "ready request 11");
@@ -709,7 +762,7 @@ public class GraphicInterface extends JFrame {
 	}
 
 	private void showMaxStorageInNonStorageDialogs() {
-		showResourceSettlementsQueryDialogs("Макс. хранилище в не-хранилищах", 12,
+		showResourceSettlementsQueryDialogs("Максимальное хранение не в хранилищах", 12,
 			(resId, setlId) -> dbListener.getMaxStorageInNonStorageBuildings(resId, setlId));
 	}
 
@@ -919,6 +972,159 @@ public class GraphicInterface extends JFrame {
 		customDialog.setVisible(true);
 	}
 
+	private void showJobsByCity() {
+		try {
+			List<String> settlements = dbListener.getAllSettlements();
+			String[] options = new String[settlements.size() + 1];
+			options[0] = "Вся страна";
+			for (int i = 0; i < settlements.size(); i++)
+				options[i + 1] = settlements.get(i);
+
+			JComboBox<String> combo = createCustomComboBox(options);
+			JPanel panel = createCustomPanel(new GridLayout(1, 2, 10, 10));
+			panel.add(createTextLabel("Населенный пункт:"));
+			panel.add(combo);
+
+			showCustomOkCancelOptionDialog(panel, "рабочие места по городу", () -> {
+				String selected = (String) combo.getSelectedItem();
+				if (selected == null)
+					return;
+
+				try {
+					Integer settlementId = null;
+					if (!selected.equals("Вся страна")) {
+						settlementId = dbListener.getSettlementId(selected);
+						if (settlementId == null) {
+							showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+								"Город не найден", "query error");
+
+							return;
+						}
+					}
+
+					JobsReportDto report = dbListener.getJobsCount(settlementId, null);
+					showJobsResult(report);
+				}
+				catch (Exception ex) {
+					showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+						"Ошибка выполнения запроса 5: " + ex.getMessage(), "query error");
+				}
+			});
+		}
+		catch (Exception e) {
+			showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+				"Ошибка выполнения запроса 5: " + e.getMessage(), "query error");
+		}
+	}
+
+	private void showJobsByBuilding() {
+		try {
+			List<String> settlements = dbListener.getAllSettlements();
+			String[] cityOptions = new String[settlements.size() + 1];
+			cityOptions[0] = "Вся страна";
+			for (int i = 0; i < settlements.size(); i++)
+				cityOptions[i + 1] = settlements.get(i);
+
+			JComboBox<String> cityCombo = createCustomComboBox(cityOptions);
+			JPanel cityPanel = createCustomPanel(new GridLayout(1, 2, 10, 10));
+			cityPanel.add(createTextLabel("Населенный пункт (для фильтрации):"));
+			cityPanel.add(cityCombo);
+
+			showCustomOkCancelOptionDialog(cityPanel, "выбор города для зданий", () -> {
+				String selectedCity = (String) cityCombo.getSelectedItem();
+				if (selectedCity == null)
+					return;
+
+				try {
+					Integer settlementId = null;
+					if (!selectedCity.equals("Вся страна")) {
+						settlementId = dbListener.getSettlementId(selectedCity);
+						if (settlementId == null) {
+							showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+								"Город не найден", "query error");
+
+							return;
+						}
+					}
+
+					List<BuildingInfoDto> buildings = dbListener.getBuildingsList(settlementId);
+					if (buildings.isEmpty()) {
+						showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+							"Нет зданий в выбранной локации", "ready request 5");
+
+						return;
+					}
+
+					Integer buildingId = showSingleBuildingChooser("Выберите здание", buildings);
+					if (buildingId == null)
+						return;
+
+					JobsReportDto report = dbListener.getJobsCount(null, buildingId);
+					showJobsResult(report);
+				}
+				catch (Exception ex) {
+					showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+						"Ошибка выполенния запроса 5: " + ex.getMessage(), "query error");
+				}
+			});
+		}
+		catch (Exception e) {
+			showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+                		"Ошибка выполенния запроса 5: " + e.getMessage(), "query error");
+		}
+	}
+
+	private Integer showSingleBuildingChooser(String title, List<BuildingInfoDto> buildings) {
+		if (buildings == null || buildings.isEmpty())
+			return null;
+
+		List<String> names = new ArrayList<>();
+		for (BuildingInfoDto b : buildings)
+			names.add(b.blueprintName() + " (" + b.settlementName() + ")");
+
+		JList<String> list = new JList<>(names.toArray(new String[0]));
+		list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		list.setBackground(menuColor);
+		list.setForeground(fontColor);
+		list.setFont(defaultTextFont);
+		JScrollPane scroll = new JScrollPane(list);
+		scroll.setPreferredSize(new Dimension(400, 300));
+
+		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+		buttonPanel.setBackground(menuColor);
+		JButton okButton = createButton("Выбрать");
+		JButton cancelButton = createButton("Отмена");
+		buttonPanel.add(okButton);
+		buttonPanel.add(cancelButton);
+
+		JPanel mainPanel = new JPanel(new BorderLayout());
+		mainPanel.setBackground(menuColor);
+		mainPanel.add(scroll, BorderLayout.CENTER);
+		mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+		JOptionPane optionPane = new JOptionPane(mainPanel, JOptionPane.PLAIN_MESSAGE,
+			JOptionPane.DEFAULT_OPTION, null, new Object[]{});
+
+		optionPane.setBackground(menuColor);
+		JDialog dialog = optionPane.createDialog(this, "W&R:SR - data service: " + title);
+		dialog.setBackground(menuColor);
+
+		final Integer[] result = { null };
+		okButton.addActionListener(e -> {
+			int idx = list.getSelectedIndex();
+			if (idx >= 0) result[0] = buildings.get(idx).id();
+			dialog.dispose();
+		});
+
+		cancelButton.addActionListener(e -> dialog.dispose());
+
+		dialog.pack();
+		dialog.setLocationRelativeTo(this);
+		dialog.setVisible(true);
+
+		return result[0];
+	}
+
 
 
 	private JMenu createMainMenu(String title) {
@@ -1038,6 +1244,15 @@ public class GraphicInterface extends JFrame {
 		tableModel.addRow(new Object[]{ "Итого трудодней", details.totalWorkdays() });
 	}
 
+	private void showJobsResult(JobsReportDto report) {
+		clearTable();
+
+		tableModel.addColumn("Показатель");
+		tableModel.addColumn("Количество");
+
+		tableModel.addRow(new Object[]{ "Общее количество рабочих мест", report.totalJobs() });
+		tableModel.addRow(new Object[]{ "Рабочие места, требующие высшего образования", report.totalHigherEduJobs() });
+	}
 
 
 	@FunctionalInterface

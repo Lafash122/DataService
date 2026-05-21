@@ -21,7 +21,7 @@ public interface DataBaseListener {
 	// 4
 	public int getMaxResourceConsumption(Integer resourceId, Integer cityId) throws Exception;
 	// 5
-	
+	public JobsReportDto getJobsCount(Integer settlementId, Integer buildingId) throws Exception;
 	// 6
 	public double getTotalResourceStorage(Integer resourceId, Integer settlementId) throws Exception;
 	// 7

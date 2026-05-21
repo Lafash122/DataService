@@ -110,55 +110,24 @@ public class QueryService {
 
     // 5
     public JobsReportDto getJobsCount(Integer settlementId, Integer buildingId) throws SQLException {
-        String sql;
+        String sql = """
+            SELECT 
+                COALESCE(SUM(fb.number_of_jobs), 0) + 
+                COALESCE(SUM(pf.number_of_jobs), 0) + 
+                COALESCE(SUM(tr.number_of_jobs), 0) AS total_jobs,
+                COALESCE(SUM(fb.number_of_jobs_with_higher_education), 0) + 
+                COALESCE(SUM(pf.number_of_jobs_with_higher_education), 0) + 
+                0 AS total_higher_edu_jobs
+            FROM BUILDINGS b
+            LEFT JOIN FACTORY_BLUEPRINTS fb ON b.blueprint = fb.id
+            LEFT JOIN PUBLIC_FACILITY_BLUEPRINTS pf ON b.blueprint = pf.id
+            LEFT JOIN TEMPORARY_RESIDENCE_BUILDING_BLUEPRINTS tr ON b.blueprint = tr.id
+            """;
     
-        if (buildingId != null) {
-            sql = """
-                SELECT 
-                    COALESCE(SUM(fb.number_of_jobs), 0) + 
-                    COALESCE(SUM(pf.number_of_jobs), 0) + 
-                    COALESCE(SUM(tr.number_of_jobs), 0) AS total_jobs,
-                    COALESCE(SUM(fb.number_of_jobs_with_higher_education), 0) + 
-                    COALESCE(SUM(pf.number_of_jobs_with_higher_education), 0) + 
-                    COALESCE(SUM(tr.number_of_jobs_with_higher_education), 0) AS total_higher_edu_jobs
-                FROM BUILDINGS b
-                LEFT JOIN FACTORY_BLUEPRINTS fb ON b.blueprint = fb.id
-                LEFT JOIN PUBLIC_FACILITY_BLUEPRINTS pf ON b.blueprint = pf.id
-                LEFT JOIN TEMPORARY_RESIDENCE_BUILDING_BLUEPRINTS tr ON b.blueprint = tr.id
-                WHERE b.id = ?
-                """;
-        }
-        else if (settlementId != null) {
-            sql = """
-                SELECT 
-                    COALESCE(SUM(fb.number_of_jobs), 0) + 
-                    COALESCE(SUM(pf.number_of_jobs), 0) + 
-                    COALESCE(SUM(tr.number_of_jobs), 0) AS total_jobs,
-                    COALESCE(SUM(fb.number_of_jobs_with_higher_education), 0) + 
-                    COALESCE(SUM(pf.number_of_jobs_with_higher_education), 0) + 
-                    COALESCE(SUM(tr.number_of_jobs_with_higher_education), 0) AS total_higher_edu_jobs
-                FROM BUILDINGS b
-                LEFT JOIN FACTORY_BLUEPRINTS fb ON b.blueprint = fb.id
-                LEFT JOIN PUBLIC_FACILITY_BLUEPRINTS pf ON b.blueprint = pf.id
-                LEFT JOIN TEMPORARY_RESIDENCE_BUILDING_BLUEPRINTS tr ON b.blueprint = tr.id
-                WHERE b.settlement = ?
-                """;
-        }
-        else {
-            sql = """
-                SELECT 
-                    COALESCE(SUM(fb.number_of_jobs), 0) + 
-                    COALESCE(SUM(pf.number_of_jobs), 0) + 
-                    COALESCE(SUM(tr.number_of_jobs), 0) AS total_jobs,
-                    COALESCE(SUM(fb.number_of_jobs_with_higher_education), 0) + 
-                    COALESCE(SUM(pf.number_of_jobs_with_higher_education), 0) + 
-                    COALESCE(SUM(tr.number_of_jobs_with_higher_education), 0) AS total_higher_edu_jobs
-                FROM BUILDINGS b
-                LEFT JOIN FACTORY_BLUEPRINTS fb ON b.blueprint = fb.id
-                LEFT JOIN PUBLIC_FACILITY_BLUEPRINTS pf ON b.blueprint = pf.id
-                LEFT JOIN TEMPORARY_RESIDENCE_BUILDING_BLUEPRINTS tr ON b.blueprint = tr.id
-                """;
-        }
+        if (buildingId != null)
+            sql += " WHERE b.id = ?";
+        else if (settlementId != null)
+            sql += " WHERE b.settlement = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
