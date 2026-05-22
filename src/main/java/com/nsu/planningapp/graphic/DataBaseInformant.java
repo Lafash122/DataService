@@ -4,6 +4,7 @@ import com.nsu.planningapp.planningapp.infrastructure.db.DatabaseInitializer;
 import com.nsu.planningapp.planningapp.infrastructure.db.DatabaseConnection;
 import com.nsu.planningapp.planningapp.service.QueryService;
 import com.nsu.planningapp.planningapp.service.PreliminaryQueryService;
+import com.nsu.planningapp.planningapp.service.InsertService;
 import com.nsu.planningapp.planningapp.dto.*;
 
 import java.sql.Connection;
@@ -12,6 +13,7 @@ import java.util.List;
 public class DataBaseInformant implements DataBaseListener {
 	private final QueryService queryService = new QueryService();
 	private final PreliminaryQueryService preliminaryService = new PreliminaryQueryService();
+	private final InsertService insertService = new InsertService();
 
 	@Override
 	public String getDBName() {
@@ -162,5 +164,21 @@ public class DataBaseInformant implements DataBaseListener {
 	@Override
 	public List<BuildingInfoDto> getBuildingsWithParking() throws Exception {
 		return PreliminaryQueryService.getBuildingsWithParking();
+	}
+
+
+	@Override
+	public void addSettlement(String name) throws Exception {
+		insertService.addSettlement(name);
+	}
+
+	@Override
+	public void addBuilding(String settlementName, String blueprintName) throws Exception {
+		insertService.addBuilding(settlementName, blueprintName);
+	}
+
+	@Override
+	public void addTransport(String blueprintName) throws Exception {
+		insertService.addTransport(blueprintName);
 	}
 }

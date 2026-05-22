@@ -269,11 +269,8 @@ public class QueryService {
     // 9
     public List<BuildingInfoDto> getBuildingsList(Integer settlementId) throws SQLException {
         String sql = "SELECT b.id, bb.name AS blueprint_name, s.name AS settlement_name, bb.blueprint_type " +
-                "FROM BUILDINGS b " +
-                "JOIN BUILDING_BLUEPRINTS bb ON b.blueprint = bb.id " +
-                "JOIN SETTLEMENTS s ON b.settlement = s.id " +
-                "WHERE (? IS NULL OR b.settlement = ?) " +
-                "ORDER BY s.name, bb.name";
+                "FROM BUILDINGS b JOIN BUILDING_BLUEPRINTS bb ON b.blueprint = bb.id " +
+                "JOIN SETTLEMENTS s ON b.settlement = s.id WHERE (? IS NULL OR b.settlement = ?) ORDER BY s.name, bb.name";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {

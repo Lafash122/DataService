@@ -47,4 +47,8 @@ public interface DataBaseListener {
 	public List<String> getAllTransportBlueprintNames() throws Exception;
 	public Integer getTransportBlueprintId(String name) throws Exception;
 	public List<BuildingInfoDto> getBuildingsWithParking() throws Exception;
+
+	void addSettlement(String name) throws Exception;
+	void addBuilding(String settlementName, String blueprintName) throws Exception;
+	void addTransport(String blueprintName) throws Exception;
 }

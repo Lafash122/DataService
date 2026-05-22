@@ -144,7 +144,8 @@ public class GraphicInterface extends JFrame {
 	private JMenu createDataHandlingMenu() {
 		JMenu res = createMainMenu("Data");
 
-		JMenuItem insertDataItem = createMenuItem("Insert", "create new data element");
+		JMenu insertDataItem = createInsertMenu();
+
 		JMenuItem editDataItem = createMenuItem("Edit", "edit existing data element");
 		JMenuItem userRequestItem = createMenuItem("User request", "write your own request");
 		userRequestItem.addActionListener(e -> showUserRequestDialogs());
@@ -172,6 +173,25 @@ public class GraphicInterface extends JFrame {
 
 		res.add(showHelpItem);
 		res.add(aboutProgramItem);
+
+		return res;
+	}
+
+	private JMenu createInsertMenu() {
+		JMenu res = createSubMenu("Insert", "create new data element");
+
+		JMenuItem addCityItem = createMenuItem("Добавить город");
+		addCityItem.addActionListener(e -> showAddCityDialog());
+
+		JMenuItem addBuildingItem = createMenuItem("Добавить здание");
+		addBuildingItem.addActionListener(e -> showAddBuildingDialog());
+
+		JMenuItem addTransportItem = createMenuItem("Добавить транспорт");
+		addTransportItem.addActionListener(e -> showAddTransportDialog());
+
+		res.add(addCityItem);
+		res.add(addBuildingItem);
+		res.add(addTransportItem);
 
 		return res;
 	}
@@ -375,6 +395,130 @@ public class GraphicInterface extends JFrame {
 		JDialog userRequestDialog = new JDialog(this, "W&R:SR - data service: user request", true);
 
 		userRequestDialog.setVisible(true);
+	}
+
+	private void showAddCityDialog() {
+		if (!isConnected) {
+			showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+				"Нет подключения к базе данных", "insert");
+
+			return;
+		}
+
+		JPanel panel = createCustomPanel(new GridLayout(1, 2, 10, 10));
+		JTextField nameField = new JTextField();
+		nameField.setBackground(menuColor);
+		nameField.setForeground(fontColor);
+		nameField.setFont(defaultTextFont);
+		panel.add(createTextLabel("Название города:"));
+		panel.add(nameField);
+		showCustomOkCancelOptionDialog(panel, "добавление города", () -> {
+			String name = nameField.getText().trim();
+			if (name.isEmpty()) {
+				showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+					"Название не может быть пустым", "insert error");
+
+				return;
+			}
+			try {
+				dbListener.addSettlement(name);
+				showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+					"Город добавлен", "succes");
+			}
+			catch (Exception ex) {
+				showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+					"Ошибка добавления: " + ex.getMessage(), "insert error");
+			}
+		});
+	}
+
+	private void showAddBuildingDialog() {
+		if (!isConnected) {
+			showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+				"Нет подключения", "insert");
+
+			return;
+		}
+		try {
+			List<String> cities = dbListener.getAllSettlements();
+			List<String> blueprints = dbListener.getAllBuildingBlueprintNames();
+			if (cities.isEmpty() || blueprints.isEmpty()) {
+				showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+					"Нет городов или чертежей", "insert error");
+
+				return;
+			}
+
+			JComboBox<String> cityCombo = createCustomComboBox(cities.toArray(new String[0]));
+			JComboBox<String> blueprintCombo = createCustomComboBox(blueprints.toArray(new String[0]));
+			JPanel panel = createCustomPanel(new GridLayout(2, 2, 10, 10));
+			panel.add(createTextLabel("Город:"));
+			panel.add(cityCombo);
+			panel.add(createTextLabel("Чертёж здания:"));
+			panel.add(blueprintCombo);
+			showCustomOkCancelOptionDialog(panel, "добавление здания", () -> {
+				String city = (String) cityCombo.getSelectedItem();
+				String blueprint = (String) blueprintCombo.getSelectedItem();
+				if (city == null || blueprint == null)
+					return;
+
+				try {
+					dbListener.addBuilding(city, blueprint);
+					showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+						"Здание добавлено", "succes");
+				}
+				catch (Exception ex) {
+					showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+						"Ошибка добавления: " + ex.getMessage(), "insert error");
+				}
+			});
+		}
+		catch (Exception e) {
+			showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+				"Ошибка добваления: " + e.getMessage(), "insert error");
+		}
+	}
+
+	private void showAddTransportDialog() {
+		if (!isConnected) {
+			showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+				"Нет подключения", "inser");
+
+			return;
+		}
+		try {
+			List<String> blueprints = dbListener.getAllTransportBlueprintNames();
+			if (blueprints.isEmpty()) {
+				showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+					"Нет чертежей транспорта", "insert error");
+
+				return;
+			}
+
+			JComboBox<String> blueprintCombo = createCustomComboBox(blueprints.toArray(new String[0]));
+			JPanel panel = createCustomPanel(new GridLayout(1, 2, 10, 10));
+			panel.add(createTextLabel("Чертёж транспорта:"));
+			panel.add(blueprintCombo);
+			showCustomOkCancelOptionDialog(panel, "добавление транспорта", () -> {
+				String blueprint = (String) blueprintCombo.getSelectedItem();
+				if (blueprint == null)
+					return;
+
+				try {
+					dbListener.addTransport(blueprint);
+					showCustomOkOptionDialog(JOptionPane.INFORMATION_MESSAGE,
+						"Транспорт добавлен", "succes");
+				}
+				catch (Exception ex) {
+					showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+						"Ошибка добавления: " + ex.getMessage(), "insert error");
+				}
+			});
+		}
+		catch (Exception e) {
+			showCustomOkOptionDialog(JOptionPane.ERROR_MESSAGE,
+				"Ошибка добавления: " + e.getMessage(), "insert error");
+		}
 	}
 
 	private void showTotalResidentCapacityDialogs() {
